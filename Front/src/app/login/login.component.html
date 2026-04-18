@@ -1,0 +1,57 @@
+<section class="login">
+  <div class="background">
+    <div class="mask"></div>
+  </div>
+  <div class="pattern"></div>
+
+  <div class="info">
+    <div class="logos">
+      <img src="assets/SonoraLogo.png" alt="Sonora" />
+      <img src="assets/logo-transformacion-digital-white.svg" alt="Transformación Digital" />
+      <img src="assets/SEGOBLogo.png" alt="SEGOB" />
+    </div>
+
+    <h3>Portal de administración de solicitudes de servidores y recursos</h3>
+    <h6>Accede al dashboard para crear usuarios, solicitudes, servidores y consultar reportes.</h6>
+
+    <p>
+      Demo lista para pruebas locales sin Docker. El backend usa SQLite en modo local y mantiene soporte para PostgreSQL en Docker.
+    </p>
+
+    <div class="demo-box">
+      <strong>Acceso demo</strong>
+      <span>Correo: <code>admin&#64;local</code></span>
+      <span>Contraseña: <code>admin</code></span>
+      <span>API local: <code>http://localhost:5055</code></span>
+    </div>
+  </div>
+
+  <div class="form">
+    <div class="container">
+      <img src="assets/IconInicio.svg" alt="Inicio" />
+      <h3>INICIO DE SESIÓN</h3>
+
+      <form (ngSubmit)="iniciarSesion()">
+        <div class="contenedor">
+          <div class="input-group">
+            <input [(ngModel)]="correo" type="text" id="correo" name="correo" required />
+            <label for="correo">Correo electrónico</label>
+          </div>
+
+          <div class="input-group">
+            <input [(ngModel)]="password" type="password" id="contrasena" name="password" required />
+            <label for="contrasena">Contraseña</label>
+          </div>
+
+          <div class="link">
+            <a (click)="recuperarContrasena()"><u>¿Olvidaste tu contraseña?</u></a>
+          </div>
+
+          <p *ngIf="errorMessage" class="error-text">{{ errorMessage }}</p>
+        </div>
+
+        <button type="submit" [disabled]="loading">{{ loading ? 'Entrando...' : 'Iniciar sesión' }}</button>
+      </form>
+    </div>
+  </div>
+</section>

@@ -1,0 +1,94 @@
+CREATE DATABASE "AgendaDigital"
+    WITH
+    OWNER = postgres
+    ENCODING = 'UTF8'
+    LOCALE_PROVIDER = 'libc'
+    CONNECTION LIMIT = -1
+    IS_TEMPLATE = False;
+
+CREATE TABLE public."instituciones"
+(
+    id_institucion bigserial NOT NULL,
+    nombre character varying(50) NOT NULL,
+    PRIMARY KEY (id_institucion)
+);
+
+ALTER TABLE IF EXISTS public."instituciones"
+    OWNER to postgres;
+
+CREATE TABLE public."cargos"
+(
+    id_cargo bigserial NOT NULL,
+    nombre character varying(50) NOT NULL,
+    PRIMARY KEY (id_cargo)
+);
+
+ALTER TABLE IF EXISTS public."cargos"
+    OWNER to postgres;
+
+
+CREATE TABLE public.direcciones
+(
+    id_direccion bigserial NOT NULL,
+    estado character varying(50) NOT NULL,
+    ciudad character varying(100) NOT NULL,
+    colonia character varying(100) NOT NULL,
+    calle character varying(100) NOT NULL,
+    numero_exterior character varying(20) NOT NULL,
+    numero_interior character varying(10) DEFAULT 'No tiene',
+    PRIMARY KEY (id_direccion)
+);
+
+ALTER TABLE IF EXISTS public.direcciones
+    OWNER to postgres;
+
+CREATE TABLE public.contacto_caracteristicas
+(
+    id_caracteristica bigserial NOT NULL,
+    id_cargo bigint NOT NULL,
+    id_institucion bigint NOT NULL,
+    id_direccion bigint NOT NULL,
+    PRIMARY KEY (id_caracteristica),
+    FOREIGN KEY (id_cargo)
+        REFERENCES public.cargos (id_cargo) MATCH SIMPLE
+        ON UPDATE NO ACTION
+        ON DELETE NO ACTION
+        NOT VALID,
+    FOREIGN KEY (id_direccion)
+        REFERENCES public.direcciones (id_direccion) MATCH SIMPLE
+        ON UPDATE NO ACTION
+        ON DELETE NO ACTION
+        NOT VALID,
+    FOREIGN KEY (id_institucion)
+        REFERENCES public.instituciones (id_institucion) MATCH SIMPLE
+        ON UPDATE NO ACTION
+        ON DELETE NO ACTION
+        NOT VALID
+);
+
+ALTER TABLE IF EXISTS public.contacto_caracteristicas
+    OWNER to postgres;
+
+CREATE TABLE public.contactos
+(
+    id_contacto bigserial NOT NULL,
+    nombres character varying(80) NOT NULL,
+    apellido_paterno character varying(30) NOT NULL,
+    apellido_materno character varying(30) NOT NULL,
+    email character varying(200) NOT NULL,
+    telefono_celular character varying(15) NOT NULL,
+    telefono_oficina character varying(15) DEFAULT NULL,
+    fecha_nacimiento date NOT NULL,
+    fotografia text DEFAULT 'No posee',
+    id_direccion bigint NOT NULL,
+    id_caracteristica bigint NOT NULL,
+    PRIMARY KEY (id_contacto)
+    ADD FOREIGN KEY (id_caracteristica)
+       REFERENCES public.caracteristicas (id_caracteristica) MATCH SIMPLE
+       ON UPDATE NO ACTION
+       ON DELETE NO ACTION
+       NOT VALID;
+);
+
+ALTER TABLE IF EXISTS public.contactos
+    OWNER to postgres;

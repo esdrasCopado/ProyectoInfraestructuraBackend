@@ -1,102 +1,113 @@
 # SolicitudServidores
 
-Sistema para gestionar **solicitudes, usuarios, servidores, VPNs, subdominios, evidencias y reportes** de infraestructura.
+Sistema para gestionar **solicitudes, usuarios, servidores, VPNs, subdominios, evidencias, cartas responsivas y reportes** de infraestructura.
 
 ---
 
-## ✅ Lo que ya puedes probar
+## ✅ Funcionalidades disponibles
 
 - **Login JWT** con usuario demo
-- **CRUD de usuarios**
-- **CRUD de solicitudes**
-- **CRUD de servidores**
-- Solicitudes con **múltiples servidores**
+- **CRUD de usuarios** con roles
+- **CRUD de solicitudes** con notificaciones
+- **CRUD de servidores** con múltiples recursos por solicitud
 - Registro de:
   - tipo de uso (`Interno` / `Publicado`)
-  - IP opcional
-  - llave de licencia
-  - VPN y expiración
-  - subdominios
-  - evidencias de pruebas
+  - IP opcional, llave de licencia
+  - VPN y fecha de expiración
+  - subdominios y evidencias de pruebas
   - tareas pendientes
+- **Gestión de VPNs**
+- **Cartas responsivas** (generación desde plantillas `.docx`)
 - **Reportes** de:
   - vulnerabilidades pendientes
   - revisión anual pendiente
   - VPNs por expirar
 - **Frontend estático** en `Back/wwwroot`
-- **Swagger** para probar la API
+- **Swagger** para explorar y probar la API
 
 ---
 
-## 🚀 Opción 1: Probar **sin Docker** (recomendada)
+## 🚀 Opción 1: Ejecutar sin Docker (recomendada)
 
-Esta opción ya está configurada para usar **SQLite local**.
+Usa **SQLite local** — no requiere PostgreSQL ni ninguna otra base de datos.
 
 ### Requisitos
-- Tener instalado **.NET 8 SDK**
 
-### Pasos
+- [.NET 8 SDK](https://dotnet.microsoft.com/download)
+- [Node.js + npm](https://nodejs.org/) (para el frontend Angular)
+
+### Backend
+
 ```powershell
-cd "c:\Users\Louie\Downloads\resguardo-servidores-back-esdras\Back"
+cd Back
 dotnet restore
-dotnet build
 dotnet run --urls "http://localhost:5055"
 ```
 
-### Abrir en el navegador
-- API/UI estática: `http://localhost:5055/`
-- Swagger: `http://localhost:5055/swagger`
-- Health: `http://localhost:5055/health`
+### Frontend Angular
 
-### Front Angular
 En otra terminal:
+
 ```powershell
-cd "c:\Users\Louie\Downloads\resguardo-servidores-back-esdras\Front"
+cd Front
 npm install
 npm start
 ```
 
-Abre:
-- Angular: `http://localhost:4200/`
+### Script todo-en-uno
 
-El frontend Angular usa `proxy.conf.json` para redirigir `/api` y `/health` al backend local en `http://localhost:5055`.
-
-### Script rápido
-También puedes levantar ambos con:
 ```powershell
-cd "c:\Users\Louie\Downloads\resguardo-servidores-back-esdras"
 .\run-local.ps1
 ```
 
+Levanta backend y frontend en ventanas separadas automáticamente.
+
+### URLs
+
+| Servicio | URL |
+|---|---|
+| Frontend Angular | http://localhost:4200 |
+| API / UI estática | http://localhost:5055 |
+| Swagger | http://localhost:5055/swagger |
+| Health check | http://localhost:5055/health |
+
 ### Credenciales demo
+
 - **Correo:** `admin@local`
 - **Contraseña:** `admin`
 
 ### Base de datos local
-Se crea automáticamente en:
-- `Back/solicitud_servidores_dev.db`
 
-Si quieres reiniciar la base local desde cero, puedes borrar ese archivo o cambiar en `Back/variables.env`:
+Se crea automáticamente en `Back/solicitud_servidores_dev.db`.
+
+Para reiniciarla desde cero, edita `Back/variables.env`:
+
 ```env
 RESET_SQLITE_ON_START=true
 ```
 
 ---
 
-## 🐳 Opción 2: Probar **con Docker**
+## 🐳 Opción 2: Ejecutar con Docker
 
-Si tienes Docker Desktop instalado y ejecutándose:
+Requiere Docker Desktop instalado y en ejecución.
 
 ```powershell
-cd "c:\Users\Louie\Downloads\resguardo-servidores-back-esdras"
 docker compose up -d --build
 ```
 
-Luego abre:
-- API/UI: `http://localhost:8080/`
-- Swagger: `http://localhost:8080/swagger`
+| Servicio | URL |
+|---|---|
+| API / UI estática | http://localhost:8080 |
+| Swagger | http://localhost:8080/swagger |
 
-En Docker, la API usa **PostgreSQL** automáticamente.
+En modo Docker la API usa **PostgreSQL** automáticamente.
+
+Para correr los tests en contenedor:
+
+```powershell
+docker compose --profile test run --rm tests
+```
 
 ---
 
@@ -125,7 +136,7 @@ En Docker, la API usa **PostgreSQL** automáticamente.
 - `GET /api/solicitud/notificaciones/nuevas`
 - `PUT /api/solicitud/{id}/notificacion-leida`
 
-### Servidores y reportes
+### Servidores
 - `GET /api/servidor`
 - `GET /api/servidor/{id}`
 - `GET /api/servidor/solicitud/{idSolicitud}`
@@ -133,40 +144,53 @@ En Docker, la API usa **PostgreSQL** automáticamente.
 - `PUT /api/servidor/{id}`
 - `DELETE /api/servidor/{id}`
 - `GET /api/servidor/recursos-predeterminados`
+
+### Reportes
 - `GET /api/servidor/reportes/vulnerabilidades-pendientes`
 - `GET /api/servidor/reportes/revision-anual`
 - `GET /api/servidor/reportes/vpns-por-expirar?dias=30`
 
----
+### VPNs
+- `GET /api/vpn`
+- `GET /api/vpn/{id}`
+- `POST /api/vpn`
+- `PUT /api/vpn/{id}`
+- `DELETE /api/vpn/{id}`
 
-## 🧪 Verificación real hecha
-
-Se validó localmente en este entorno:
-
-- `dotnet build` ✅
-- `GET /health` ✅ devuelve `provider = sqlite`
-- `POST /api/auth/login` ✅
-- `POST /api/usuario` ✅
-- `POST /api/solicitud` ✅
-- `POST /api/servidor` ✅
-- reportes de revisión anual / VPNs / vulnerabilidades ✅
-- `GET /` ✅ sirve la interfaz web
+### Cartas responsivas
+- `GET /api/carta`
+- `POST /api/carta`
+- `GET /api/carta/{id}`
 
 ---
 
-## 📁 Estructura principal
+## 📁 Estructura del proyecto
 
-- `Back/` → API .NET 8 + frontend estático
-- `Back/wwwroot/` → interfaz para probar el sistema
-- `Back/Controller/` → controladores CRUD
-- `Back/Models/` → entidades del dominio
-- `Back/Repositories/` → acceso a datos
-- `docs/` → plantillas y documentos
-- `Front/` → base Angular opcional
+```
+├── Back/                         # API .NET 8
+│   ├── Controller/               # Controladores (Auth, Usuario, Solicitud, Servidor, VPN, Carta)
+│   ├── Models/                   # Entidades del dominio
+│   ├── DTOs/                     # Objetos de transferencia de datos
+│   ├── Repositories/             # Acceso a datos
+│   ├── Services/                 # Lógica de negocio
+│   ├── Helpers/                  # Utilidades internas
+│   ├── Utilities/                # Herramientas compartidas
+│   ├── DBContext/                # Contexto de Entity Framework
+│   ├── Migrations/               # Migraciones de base de datos
+│   ├── wwwroot/                  # Frontend estático para pruebas rápidas
+│   ├── variables.env             # Variables de entorno locales
+│   └── Dockerfile
+├── Front/                        # Frontend Angular
+├── docs/                         # Plantillas de documentos (.docx)
+├── tools/                        # Scripts auxiliares (extract_docx.py)
+├── docker-compose.yml
+└── run-local.ps1                 # Script para levantar backend + frontend
+```
 
 ---
 
-## 💡 Nota
+## 💡 Notas
 
-Si usas el modo sin Docker, **no necesitas PostgreSQL**. El proyecto arranca con SQLite local y ya te deja probar todo lo implementado.
-# ProyectoInfraestructuraBackend
+- Sin Docker, **no necesitas PostgreSQL**. El proyecto arranca con SQLite local.
+- Las variables de API externas (`APID_USER`, `APID_URL`, `APIC_KEY`, `APIC_URL`) en `docker-compose.yml` deben reemplazarse con los valores reales para producción.
+- La clave JWT en producción debe cambiarse por un valor seguro.

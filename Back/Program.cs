@@ -125,14 +125,32 @@ builder.Services.AddControllers(options =>
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen(c =>
 {
+    c.SwaggerDoc("v1", new OpenApiInfo
+    {
+        Title       = "Solicitud de Servidores API",
+        Version     = "v1",
+        Description = "API para la gestión de solicitudes de servidores, recursos de infraestructura y reportes administrativos.",
+        Contact     = new OpenApiContact
+        {
+            Name  = "Centro de Datos",
+            Email = "soporte@centrodatos.gob.mx"
+        }
+    });
+
+    c.TagActionsBy(api =>
+    {
+        var controller = api.ActionDescriptor.RouteValues["controller"];
+        return controller == "Reporte" ? new[] { "Reportes" } : new[] { controller! };
+    });
+
     c.AddSecurityDefinition("Bearer", new OpenApiSecurityScheme
     {
-        Name = "Authorization",
-        Type = SecuritySchemeType.Http,
-        Scheme = "Bearer",
+        Name        = "Authorization",
+        Type        = SecuritySchemeType.Http,
+        Scheme      = "Bearer",
         BearerFormat = "JWT",
-        In = ParameterLocation.Header,
-        Description = "Ingresá el token JWT. Ejemplo: Bearer {token}"
+        In          = ParameterLocation.Header,
+        Description = "Ingresa el token JWT. Ejemplo: Bearer {token}"
     });
     c.AddSecurityRequirement(new OpenApiSecurityRequirement
     {
@@ -142,7 +160,7 @@ builder.Services.AddSwaggerGen(c =>
                 Reference = new OpenApiReference
                 {
                     Type = ReferenceType.SecurityScheme,
-                    Id = "Bearer"
+                    Id   = "Bearer"
                 }
             },
             Array.Empty<string>()
@@ -399,7 +417,13 @@ using (var scope = app.Services.CreateScope())
 if (app.Environment.IsDevelopment())
 {
     app.UseSwagger();
-    app.UseSwaggerUI();
+    app.UseSwaggerUI(ui =>
+    {
+        ui.SwaggerEndpoint("/swagger/v1/swagger.json", "Solicitud de Servidores API v1");
+        ui.DocumentTitle        = "Solicitud de Servidores — API Docs";
+        ui.DefaultModelsExpandDepth(-1);
+        ui.EnableFilter();
+    });
 }
 
 

@@ -1,4 +1,4 @@
-﻿using System.ComponentModel.DataAnnotations;
+using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
 
 namespace SolicitudServidores.Models
@@ -8,33 +8,41 @@ namespace SolicitudServidores.Models
     {
         [Key]
         [DatabaseGenerated(DatabaseGeneratedOption.Identity)]
-        [Column("id")]
-        public long Id { get; set; }
+        [Column("subdominio_id")]
+        public int SubdominioId { get; set; }
 
-        [Column("id_servidor")]
-        public long? Id_Servidor { get; set; }
+        [Required]
+        [Column("requested_name")]
+        [StringLength(200)]
+        public string RequestedName { get; set; } = string.Empty;
 
-        [ForeignKey(nameof(Id_Servidor))]
-        public virtual Servidor? Servidor { get; set; }
+        [Column("approved_name")]
+        [StringLength(200)]
+        public string? ApprovedName { get; set; }
 
-        [Column("id_usuario")]
-        public long? Id_usuario { get; set; }
+        [Column("port")]
+        public int? Port { get; set; }
 
-        [ForeignKey(nameof(Id_usuario))]
-        public virtual Usuario? Usuario { get; set; }
+        [Column("ssl_required")]
+        public bool SslRequired { get; set; } = false;
 
-        [Column("nombre_url")]
-        [MaxLength]
-        public string Nombre_url { get; set; } = string.Empty;
+        [Required]
+        [Column("status")]
+        [StringLength(20)]
+        public string Status { get; set; } = "solicitado"; // solicitado | aprobado | activo | expirado | revocado
 
-        [Column("fecha_asignacion", TypeName = "date")]
-        public DateTime? Fecha_asignacion { get; set; }
+        [Column("assigned_at")]
+        public DateTime? AssignedAt { get; set; } = DateTime.UtcNow;
 
-        [Column("fecha_expiracion", TypeName = "date")]
-        public DateTime? Fecha_Expiracion { get; set; }
+        [Column("expires_at")]
+        public DateTime? ExpiresAt { get; set; }
 
-        [Column("estado")]
-        [MaxLength]
-        public string? Estado { get; set; }
+        [Column("created_at")]
+        public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
+
+        [Column("updated_at")]
+        public DateTime UpdatedAt { get; set; } = DateTime.UtcNow;
+
+        public virtual ICollection<ServerSubdominio> ServerSubdominios { get; set; } = new List<ServerSubdominio>();
     }
 }

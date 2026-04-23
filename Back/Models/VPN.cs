@@ -1,4 +1,4 @@
-﻿using System.ComponentModel.DataAnnotations;
+using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
 
 namespace SolicitudServidores.Models
@@ -8,35 +8,59 @@ namespace SolicitudServidores.Models
     {
         [Key]
         [DatabaseGenerated(DatabaseGeneratedOption.Identity)]
-        [Column("id")]
-        public long Id { get; set; }
+        [Column("vpn_id")]
+        public int VpnId { get; set; }
 
-        [Column("id_servidor")]
-        public long Id_servidor { get; set; }
+        [Required]
+        [Column("vpn_type")]
+        [StringLength(20)]
+        public string VpnType { get; set; } = string.Empty; // "dependencia" | "proveedor"
 
-        [ForeignKey(nameof(Id_servidor))]
-        public virtual Servidor? Servidor { get; set; }
+        [Required]
+        [Column("responsable")]
+        [StringLength(150)]
+        public string Responsable { get; set; } = string.Empty;
 
-        public long? Id_usuario_Responsable { get; set; }
+        [Column("cargo")]
+        [StringLength(100)]
+        public string? Cargo { get; set; }
 
-        public virtual Usuario? Usuario { get; set; }
+        [Column("phone")]
+        [StringLength(20)]
+        public string? Phone { get; set; }
 
-        [Column("tipo")]
-        [MaxLength]
-        public string Tipo { get; set; } = string.Empty;
+        [Column("email")]
+        [StringLength(150)]
+        public string? Email { get; set; }
 
-        [Column("fecha_asignacion", TypeName = "date")]
-        public DateTime? Fecha_asignacion { get; set; }
+        [Column("vpn_ip")]
+        [StringLength(45)]
+        public string? VpnIp { get; set; }
 
-        [Column("fecha_expiracion", TypeName = "date")]
-        public DateTime? Fecha_Expiracion { get; set; }
+        [Column("external_id")]
+        [StringLength(50)]
+        public string? ExternalId { get; set; }
 
-        [Column("estado")]
-        [MaxLength]
-        public string? Estado { get; set; }
+        // Solo si vpn_type = "proveedor"
+        [Column("empresa")]
+        [StringLength(150)]
+        public string? Empresa { get; set; }
 
-        [Column("folio")]
-        [MaxLength]
-        public string Folio { get; set; } = string.Empty;
+        // 30, 60 o 90 — solo si vpn_type = "proveedor"
+        [Column("vigencia_dias")]
+        public int? VigenciaDias { get; set; }
+
+        // DGIT## previo si es actualización de usuario de dependencia
+        [Column("perfil_anterior")]
+        [StringLength(50)]
+        public string? PerfilAnterior { get; set; }
+
+        [Column("created_at")]
+        public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
+
+        [Column("updated_at")]
+        public DateTime UpdatedAt { get; set; } = DateTime.UtcNow;
+
+        public virtual ICollection<ServerVpn> ServerVpns { get; set; } = new List<ServerVpn>();
     }
 }

@@ -11,10 +11,15 @@ namespace SolicitudServidores.Models
         [Column("id")]
         public long Id { get; set; }
 
-        [Column("id_solicitud")]
-        public long? Id_Solicitud { get; set; }
+        // dependency_id es requerido en el nuevo esquema
+        [Required]
+        [Column("dependency_id")]
+        public int DependencyId { get; set; }
 
-        [ForeignKey(nameof(Id_Solicitud))]
+        [ForeignKey(nameof(DependencyId))]
+        public virtual Dependency? Dependency { get; set; }
+
+        // Navegación inversa: la FK está en solicitud.server_id
         public virtual Solicitud? Solicitud { get; set; }
 
         [Column("Estado")]
@@ -177,9 +182,9 @@ namespace SolicitudServidores.Models
         [StringLength(150)]
         public string? UsuarioVulnerabilidades { get; set; }
 
-        public virtual ICollection<VPN> VPNs { get; set; } = new List<VPN>();
-        public virtual ICollection<WAF> WAFs { get; set; } = new List<WAF>();
-        public virtual ICollection<Subdominio> Subdominios { get; set; } = new List<Subdominio>();
-        public virtual ICollection<EvidenciasPruebas> EvidenciasPruebas { get; set; } = new List<EvidenciasPruebas>();
+        public virtual ICollection<ServerVpn> ServerVpns { get; set; } = new List<ServerVpn>();
+        public virtual ICollection<ServerSubdominio> ServerSubdominios { get; set; } = new List<ServerSubdominio>();
+        public virtual ICollection<Almacenamiento> Storages { get; set; } = new List<Almacenamiento>();
+        public virtual WafConfig? WafConfig { get; set; }
     }
 }

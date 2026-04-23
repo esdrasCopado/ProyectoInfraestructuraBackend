@@ -1,7 +1,6 @@
 using Microsoft.AspNetCore.Mvc;
 using SolicitudServidores.Back.DTOs;
 using SolicitudServidores.DTOs;
-using SolicitudServidores.Helpers;
 using SolicitudServidores.Models;
 using SolicitudServidores.Repositories.Interfaces;
 using SolicitudServidores.Utilities;
@@ -20,7 +19,7 @@ namespace SolicitudServidores.Controllers
         }
 
         [HttpGet]
-        public async Task<IActionResult> GetAll([FromQuery] QueryUserPaging query)
+        public async Task<IActionResult> GetAll([FromQuery] Helpers.QueryUserPaging query)
         {
             var usuarios = await _repo.GetAll(query);
             return Ok(usuarios.Select(MapToDto));
@@ -34,15 +33,9 @@ namespace SolicitudServidores.Controllers
         }
 
         [HttpGet("roles")]
-        public IActionResult GetRoles()
+        public async Task<IActionResult> GetRoles()
         {
-            return Ok(_repo.GetRoles());
-        }
-
-        [HttpGet("roles/descripcion")]
-        public IActionResult GetRolesConDescripcion()
-        {
-            return Ok(_repo.GetRolesConDescripcion());
+            return Ok(await _repo.GetRoles());
         }
 
         [HttpGet("{id}")]
@@ -56,30 +49,29 @@ namespace SolicitudServidores.Controllers
         [HttpPost]
         public async Task<IActionResult> Create([FromBody] CreateUsuarioRequest request)
         {
-            if (string.IsNullOrWhiteSpace(request.NombreCompleto) ||
-                string.IsNullOrWhiteSpace(request.Correo) ||
+            if (string.IsNullOrWhiteSpace(request.Nombre) ||
+                string.IsNullOrWhiteSpace(request.Apellidos) ||
+                string.IsNullOrWhiteSpace(request.Email) ||
                 string.IsNullOrWhiteSpace(request.Password))
             {
-                return BadRequest("Nombre, correo y contraseña son requeridos.");
+                return BadRequest("Nombre, apellidos, correo y contraseña son requeridos.");
             }
 
-            if (await _repo.ExistsUsuario(request.Correo))
+            if (await _repo.ExistsUsuario(request.Email.Trim()))
                 return Conflict("Ya existe un usuario con ese correo.");
-
-            var rol = string.IsNullOrWhiteSpace(request.Rol)
-                ? (request.Permisos ?? "Dependencia / Cliente")
-                : request.Rol;
 
             var usuario = new Usuario
             {
-                NombreCompleto = request.NombreCompleto.Trim(),
-                Correo = request.Correo.Trim(),
-                Password = Encriptar.EncriptarSHA256(request.Password),
-                Permisos = request.Permisos ?? rol ?? "Dependencia / Cliente",
-                Rol = rol ?? "Dependencia / Cliente",
-                Puesto = request.Puesto,
-                Celular = request.Celular,
-                NumeroPuesto = request.NumeroPuesto
+                Nombre         = request.Nombre.Trim(),
+                Apellidos      = request.Apellidos.Trim(),
+                Email          = request.Email.Trim().ToLower(),
+                PasswordHash   = Encriptar.EncriptarSHA256(request.Password),
+                RoleId         = request.RoleId,
+                DependencyId   = request.DependencyId,
+                NumeroEmpleado = request.NumeroEmpleado?.Trim(),
+                Cargo          = request.Cargo?.Trim(),
+                Phone          = request.Phone?.Trim(),
+                Activo         = true
             };
 
             var creado = await _repo.Create(usuario);
@@ -92,24 +84,20 @@ namespace SolicitudServidores.Controllers
             var existente = await _repo.GetById(id);
             if (existente == null) return NotFound();
 
-            existente.NombreCompleto = request.NombreCompleto ?? existente.NombreCompleto;
-            existente.Correo = request.Correo ?? existente.Correo;
-            existente.Permisos = request.Permisos ?? existente.Permisos;
-            existente.Rol = request.Rol ?? request.Permisos ?? existente.Rol;
-            existente.Puesto = request.Puesto ?? existente.Puesto;
-            existente.Celular = request.Celular ?? existente.Celular;
-            existente.NumeroPuesto = request.NumeroPuesto ?? existente.NumeroPuesto;
+            existente.Nombre         = request.Nombre?.Trim()         ?? existente.Nombre;
+            existente.Apellidos      = request.Apellidos?.Trim()      ?? existente.Apellidos;
+            existente.Email          = request.Email?.Trim().ToLower() ?? existente.Email;
+            existente.RoleId         = request.RoleId                 ?? existente.RoleId;
+            existente.DependencyId   = request.DependencyId           ?? existente.DependencyId;
+            existente.NumeroEmpleado = request.NumeroEmpleado?.Trim() ?? existente.NumeroEmpleado;
+            existente.Cargo          = request.Cargo?.Trim()          ?? existente.Cargo;
+            existente.Phone          = request.Phone?.Trim()          ?? existente.Phone;
+            existente.Activo         = request.Activo                 ?? existente.Activo;
 
             if (!string.IsNullOrWhiteSpace(request.Password))
-            {
-                existente.Password = Encriptar.EncriptarSHA256(request.Password);
-            }
+                existente.PasswordHash = Encriptar.EncriptarSHA256(request.Password);
 
-            var permisos = request.PermisosCategoria
-                ?? existente.PermisoCategorias?.Select(p => p.Categoria).ToList()
-                ?? new List<string>();
-
-            var actualizado = await _repo.Update(existente, permisos);
+            var actualizado = await _repo.Update(existente);
             if (actualizado == null) return NotFound();
 
             return Ok(MapToDto(actualizado));
@@ -123,18 +111,34 @@ namespace SolicitudServidores.Controllers
             return Ok(MapToDto(eliminado));
         }
 
+        [HttpPatch("{id}/password")]
+        public async Task<IActionResult> ChangePassword(long id, [FromBody] ChangePasswordRequest request)
+        {
+            if (string.IsNullOrWhiteSpace(request.Password))
+                return BadRequest("La contraseña no puede estar vacía.");
+
+            var actualizado = await _repo.ChangePassword(id, Encriptar.EncriptarSHA256(request.Password));
+            if (actualizado == null) return NotFound();
+            return Ok(MapToDto(actualizado));
+        }
+
         private static UsuarioDTO MapToDto(Usuario u) => new()
         {
-            Id = u.Id,
-            NombreCompleto = u.NombreCompleto,
-            Rol = string.IsNullOrWhiteSpace(u.Rol) ? u.Permisos : u.Rol,
-            Permisos = u.Permisos,
-            Correo = u.Correo,
-            Puesto = u.Puesto,
-            Celular = u.Celular,
-            NumeroPuesto = u.NumeroPuesto,
-            ImagenUrl = u.ImagenUrl,
-            PermisosCategoria = u.PermisoCategorias?.Select(p => p.Categoria).ToList() ?? new()
+            Id             = u.Id,
+            Nombre         = u.Nombre,
+            Apellidos      = u.Apellidos,
+            RoleId         = u.RoleId,
+            RolNombre      = u.Rol?.Nombre ?? string.Empty,
+            DependencyId   = u.DependencyId,
+            Email          = u.Email,
+            NumeroEmpleado = u.NumeroEmpleado,
+            Cargo          = u.Cargo,
+            Phone          = u.Phone,
+            Activo         = u.Activo,
+            LastLoginAt    = u.LastLoginAt,
+            CreatedAt      = u.CreatedAt
         };
     }
+
+    public record ChangePasswordRequest(string Password);
 }

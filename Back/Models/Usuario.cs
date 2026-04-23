@@ -3,53 +3,81 @@ using System.ComponentModel.DataAnnotations.Schema;
 
 namespace SolicitudServidores.Models
 {
-    [Table("usuarios", Schema = "public")]
+    [Table("users", Schema = "public")]
     public class Usuario
     {
         [Key]
         [DatabaseGenerated(DatabaseGeneratedOption.Identity)]
-        [Column("id")]
+        [Column("user_id")]
         public long Id { get; set; }
 
         [Required]
-        [Column("nombre_completo")]
-        [StringLength(120)]
-        public string NombreCompleto { get; set; } = string.Empty;
+        [Column("role_id")]
+        public int RoleId { get; set; }
+
+        [ForeignKey(nameof(RoleId))]
+        public virtual Roles? Rol { get; set; }
+
+        // NULL para admins de ATDT; requerido para rol dependencia
+        [Column("dependency_id")]
+        public int? DependencyId { get; set; }
+
+        [ForeignKey(nameof(DependencyId))]
+        public virtual Dependency? Dependency { get; set; }
 
         [Required]
-        [Column("rol")]
-        [StringLength(80)]
-        public string Rol { get; set; } = "Dependencia / Cliente";
+        [Column("nombre")]
+        [StringLength(100)]
+        public string Nombre { get; set; } = string.Empty;
 
         [Required]
-        [Column("permisos", TypeName = "text")]
-        public string Permisos { get; set; } = "Dependencia / Cliente";
+        [Column("apellidos")]
+        [StringLength(150)]
+        public string Apellidos { get; set; } = string.Empty;
 
         [Required]
-        [Column("correo")]
-        [StringLength(80)]
-        public string Correo { get; set; } = string.Empty;
+        [Column("email")]
+        [StringLength(150)]
+        public string Email { get; set; } = string.Empty;
 
-        [Column("puesto")]
-        [StringLength(120)]
-        public string? Puesto { get; set; }
+        // Número de empleado institucional (Apartado 6.1 de la carta)
+        [Column("numero_empleado")]
+        [StringLength(50)]
+        public string? NumeroEmpleado { get; set; }
 
-        [Column("celular")]
-        [StringLength(30)]
-        public string? Celular { get; set; }
+        [Column("cargo")]
+        [StringLength(100)]
+        public string? Cargo { get; set; }
 
-        [Column("numero_puesto")]
-        [StringLength(40)]
-        public string? NumeroPuesto { get; set; }
-
-        [Column("imagen", TypeName = "text")]
-        public string? ImagenUrl { get; set; }
+        [Column("phone")]
+        [StringLength(20)]
+        public string? Phone { get; set; }
 
         [Required]
-        [Column("contrasena")]
-        [StringLength(200)]
-        public string Password { get; set; } = string.Empty;
+        [Column("password_hash")]
+        [StringLength(255)]
+        public string PasswordHash { get; set; } = string.Empty;
 
-        public virtual List<PermisoCategoria> PermisoCategorias { get; set; } = new();
+        [Column("activo")]
+        public bool Activo { get; set; } = true;
+
+        [Column("last_login_at")]
+        public DateTime? LastLoginAt { get; set; }
+
+        [Column("created_by")]
+        public long? CreatedBy { get; set; }
+
+        [Column("created_at")]
+        public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
+
+        [Column("updated_by")]
+        public long? UpdatedBy { get; set; }
+
+        [Column("updated_at")]
+        public DateTime UpdatedAt { get; set; } = DateTime.UtcNow;
+
+        // Soft delete
+        [Column("deleted_at")]
+        public DateTime? DeletedAt { get; set; }
     }
 }

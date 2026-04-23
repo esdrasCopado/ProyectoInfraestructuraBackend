@@ -43,19 +43,19 @@ namespace SolicitudServidores.Controllers
             var servidores = await _repo.GetAll();
             var resumen = new
             {
-                total = servidores.Count,
+                total                  = servidores.Count,
                 comunicacionesValidadas = servidores.Count(s => s.ComunicacionValidada),
-                parchesAplicados = servidores.Count(s => s.ParchesAplicados),
-                xdrInstalado = servidores.Count(s => s.XdrInstalado),
+                parchesAplicados       = servidores.Count(s => s.ParchesAplicados),
+                xdrInstalado           = servidores.Count(s => s.XdrInstalado),
                 credencialesEntregadas = servidores.Count(s => s.CredencialesEntregadas),
-                wafConfigurado = servidores.Count(s => s.WafConfigurado),
-                evidenciasValidadas = servidores.Count(s => s.EvidenciaValidada),
-                publicados = servidores.Count(s => s.SolicitudPublicacion),
-                porEtapa = servidores
+                wafConfigurado         = servidores.Count(s => s.WafConfigurado),
+                evidenciasValidadas    = servidores.Count(s => s.EvidenciaValidada),
+                publicados             = servidores.Count(s => s.SolicitudPublicacion),
+                porEtapa               = servidores
                     .GroupBy(s => string.IsNullOrWhiteSpace(s.EtapaOperativa) ? "Sin etapa" : s.EtapaOperativa)
                     .Select(g => new { etapa = g.Key, total = g.Count() })
                     .OrderByDescending(g => g.total),
-                porVulnerabilidad = servidores
+                porVulnerabilidad      = servidores
                     .GroupBy(s => string.IsNullOrWhiteSpace(s.EtapaVulnerabilidades) ? "Sin etapa" : s.EtapaVulnerabilidades)
                     .Select(g => new { etapa = g.Key, total = g.Count() })
                     .OrderByDescending(g => g.total)
@@ -69,9 +69,9 @@ namespace SolicitudServidores.Controllers
         {
             var recursos = new List<RecursoServidorPredeterminadoDTO>
             {
-                new() { Nombre = "Básico", Nucleos = 2, Ram = 4, Almacenamiento = 80, Descripcion = "Aplicaciones ligeras o ambientes de pruebas" },
-                new() { Nombre = "Estándar", Nucleos = 4, Ram = 8, Almacenamiento = 160, Descripcion = "Servicios internos y apps administrativas" },
-                new() { Nombre = "Avanzado", Nucleos = 8, Ram = 16, Almacenamiento = 320, Descripcion = "Cargas publicadas o servicios críticos" }
+                new() { Nombre = "Básico",    Nucleos = 2, Ram = 4,  Almacenamiento = 80,  Descripcion = "Aplicaciones ligeras o ambientes de pruebas" },
+                new() { Nombre = "Estándar",  Nucleos = 4, Ram = 8,  Almacenamiento = 160, Descripcion = "Servicios internos y apps administrativas" },
+                new() { Nombre = "Avanzado",  Nucleos = 8, Ram = 16, Almacenamiento = 320, Descripcion = "Cargas publicadas o servicios críticos" }
             };
 
             return Ok(recursos);
@@ -84,7 +84,7 @@ namespace SolicitudServidores.Controllers
             var pendientes = servidores.Where(s =>
                 !string.IsNullOrWhiteSpace(s.EtapaVulnerabilidades) &&
                 !string.Equals(s.EtapaVulnerabilidades, "Completado", StringComparison.OrdinalIgnoreCase) &&
-                !string.Equals(s.EtapaVulnerabilidades, "Cerrado", StringComparison.OrdinalIgnoreCase));
+                !string.Equals(s.EtapaVulnerabilidades, "Cerrado",    StringComparison.OrdinalIgnoreCase));
 
             return Ok(pendientes);
         }
@@ -101,24 +101,26 @@ namespace SolicitudServidores.Controllers
             return Ok(pendientes);
         }
 
-        [HttpGet("reportes/vpns-por-expirar")]
-        public async Task<IActionResult> GetVpnsPorExpirar([FromQuery] int dias = 30)
+        [HttpGet("reportes/vpns-activas")]
+        public async Task<IActionResult> GetVpnsActivas()
         {
-            var fechaLimite = DateTime.UtcNow.Date.AddDays(dias);
             var servidores = await _repo.GetAll();
-
-            var vpnsPorExpirar = servidores
-                .Where(s => s.VPNs.Any(v => v.Fecha_Expiracion.HasValue && v.Fecha_Expiracion.Value.Date <= fechaLimite))
+            var result = servidores
+                .Where(s => s.ServerVpns.Any())
                 .Select(s => new
                 {
-                    Servidor = s,
-                    VPNs = s.VPNs
-                        .Where(v => v.Fecha_Expiracion.HasValue && v.Fecha_Expiracion.Value.Date <= fechaLimite)
-                        .OrderBy(v => v.Fecha_Expiracion)
-                        .ToList()
+                    Servidor = new { s.Id, s.Hostname, s.Ip },
+                    VPNs     = s.ServerVpns.Select(sv => new
+                    {
+                        sv.Vpn.VpnId,
+                        sv.Vpn.VpnType,
+                        sv.Vpn.Responsable,
+                        sv.Vpn.Email,
+                        sv.Vpn.VpnIp
+                    })
                 });
 
-            return Ok(vpnsPorExpirar);
+            return Ok(result);
         }
 
         [HttpGet("reportes/detallado")]
@@ -147,7 +149,13 @@ namespace SolicitudServidores.Controllers
                     s.WafConfigurado,
                     s.EvidenciaValidada,
                     s.SolicitudPublicacion,
-                    Solicitud = s.Solicitud == null ? null : new { s.Solicitud.Id, s.Solicitud.Titulo, s.Solicitud.Folio, s.Solicitud.Prioridad }
+                    Solicitud = s.Solicitud == null ? null : new
+                    {
+                        s.Solicitud.Id,
+                        s.Solicitud.Folio,
+                        s.Solicitud.NombreServidor,
+                        s.Solicitud.Estatus
+                    }
                 });
 
             return Ok(servidores);
@@ -163,7 +171,7 @@ namespace SolicitudServidores.Controllers
         {
             var servidores = AplicarFiltrosReporte(await _repo.GetAll(), estado, etapa, tipoUso, buscar, soloPendientes).ToList();
             var csv = new StringBuilder();
-            csv.AppendLine("Id,Folio,TituloSolicitud,Hostname,Estado,TipoUso,EtapaOperativa,EtapaVulnerabilidades,ResponsableInfraestructura,IP,ComunicacionValidada,ParchesAplicados,XdrInstalado,CredencialesEntregadas,WafConfigurado,EvidenciaValidada,SolicitudPublicacion");
+            csv.AppendLine("Id,Folio,NombreServidor,Hostname,Estado,TipoUso,EtapaOperativa,EtapaVulnerabilidades,ResponsableInfraestructura,IP,ComunicacionValidada,ParchesAplicados,XdrInstalado,CredencialesEntregadas,WafConfigurado,EvidenciaValidada,SolicitudPublicacion");
 
             foreach (var servidor in servidores)
             {
@@ -171,7 +179,7 @@ namespace SolicitudServidores.Controllers
                 {
                     servidor.Id.ToString(),
                     EscapeCsv(servidor.Solicitud?.Folio),
-                    EscapeCsv(servidor.Solicitud?.Titulo),
+                    EscapeCsv(servidor.Solicitud?.NombreServidor),
                     EscapeCsv(servidor.Hostname),
                     EscapeCsv(servidor.Estado),
                     EscapeCsv(servidor.TipoUso),
@@ -180,12 +188,12 @@ namespace SolicitudServidores.Controllers
                     EscapeCsv(servidor.ResponsableInfraestructura),
                     EscapeCsv(servidor.Ip),
                     servidor.ComunicacionValidada ? "Sí" : "No",
-                    servidor.ParchesAplicados ? "Sí" : "No",
-                    servidor.XdrInstalado ? "Sí" : "No",
+                    servidor.ParchesAplicados     ? "Sí" : "No",
+                    servidor.XdrInstalado         ? "Sí" : "No",
                     servidor.CredencialesEntregadas ? "Sí" : "No",
-                    servidor.WafConfigurado ? "Sí" : "No",
-                    servidor.EvidenciaValidada ? "Sí" : "No",
-                    servidor.SolicitudPublicacion ? "Sí" : "No"
+                    servidor.WafConfigurado        ? "Sí" : "No",
+                    servidor.EvidenciaValidada     ? "Sí" : "No",
+                    servidor.SolicitudPublicacion  ? "Sí" : "No"
                 }));
             }
 
@@ -231,8 +239,13 @@ namespace SolicitudServidores.Controllers
 
         private static void ApplyServidorChanges(Servidor servidor, CreateServidorRequest request)
         {
-            servidor.Id_Solicitud = request.IdSolicitud ?? servidor.Id_Solicitud;
-            servidor.Estado = string.IsNullOrWhiteSpace(request.Estado) ? (string.IsNullOrWhiteSpace(servidor.Estado) ? "Pendiente" : servidor.Estado) : request.Estado!;
+            if (request.DependencyId.HasValue)
+                servidor.DependencyId = request.DependencyId.Value;
+
+            servidor.Estado = string.IsNullOrWhiteSpace(request.Estado)
+                ? (string.IsNullOrWhiteSpace(servidor.Estado) ? "Pendiente" : servidor.Estado)
+                : request.Estado!;
+
             servidor.Expiracion = request.Expiracion ?? servidor.Expiracion;
 
             if (request.Hostname != null)
@@ -256,10 +269,10 @@ namespace SolicitudServidores.Controllers
             if (request.LlaveOS != null)
                 servidor.LlaveOS = string.IsNullOrWhiteSpace(request.LlaveOS) ? null : request.LlaveOS.Trim();
 
-            servidor.Nucleos = request.Nucleos ?? (servidor.Nucleos == 0 ? 2 : servidor.Nucleos);
-            servidor.Ram = request.Ram ?? (servidor.Ram == 0 ? 8 : servidor.Ram);
+            servidor.Nucleos        = request.Nucleos        ?? (servidor.Nucleos        == 0 ? 2   : servidor.Nucleos);
+            servidor.Ram            = request.Ram            ?? (servidor.Ram            == 0 ? 8   : servidor.Ram);
             servidor.Almacenamiento = request.Almacenamiento ?? (servidor.Almacenamiento == 0 ? 100 : servidor.Almacenamiento);
-            servidor.Descripcion = request.Descripcion ?? servidor.Descripcion;
+            servidor.Descripcion    = request.Descripcion    ?? servidor.Descripcion;
 
             if (request.PlantillaRecursos != null)
                 servidor.PlantillaRecursos = string.IsNullOrWhiteSpace(request.PlantillaRecursos) ? "General" : request.PlantillaRecursos!;
@@ -270,15 +283,11 @@ namespace SolicitudServidores.Controllers
             if (request.ResponsableInfraestructura != null)
                 servidor.ResponsableInfraestructura = request.ResponsableInfraestructura;
 
-            if (request.UsuarioUltimaActualizacion != null)
-                servidor.UsuarioUltimaActualizacion = request.UsuarioUltimaActualizacion;
-            else if (request.ResponsableInfraestructura != null)
-                servidor.UsuarioUltimaActualizacion = request.ResponsableInfraestructura;
+            servidor.UsuarioUltimaActualizacion = request.UsuarioUltimaActualizacion
+                ?? request.ResponsableInfraestructura
+                ?? servidor.UsuarioUltimaActualizacion;
 
-            if (request.FechaUltimaActualizacion.HasValue)
-                servidor.FechaUltimaActualizacion = request.FechaUltimaActualizacion;
-            else
-                servidor.FechaUltimaActualizacion = DateTime.UtcNow;
+            servidor.FechaUltimaActualizacion = request.FechaUltimaActualizacion ?? DateTime.UtcNow;
 
             if (request.FechaAsignacionIp.HasValue)
                 servidor.FechaAsignacionIp = request.FechaAsignacionIp;
@@ -366,110 +375,43 @@ namespace SolicitudServidores.Controllers
 
             if (request.UsuarioVulnerabilidades != null)
                 servidor.UsuarioVulnerabilidades = request.UsuarioVulnerabilidades;
-
-            if (request.VPNs != null)
-                servidor.VPNs = request.VPNs.Select(MapVpn).ToList();
-
-            if (request.Subdominios != null)
-                servidor.Subdominios = request.Subdominios.Select(MapSubdominio).ToList();
-
-            if (request.WAFs != null)
-                servidor.WAFs = request.WAFs.Select(MapWaf).ToList();
-
-            if (request.EvidenciasPruebas != null)
-                servidor.EvidenciasPruebas = request.EvidenciasPruebas.Select(MapEvidencia).ToList();
         }
 
-        private static VPN MapVpn(VpnRequestDTO request)
-        {
-            return new VPN
-            {
-                Id_usuario_Responsable = request.IdUsuarioResponsable,
-                Tipo = request.Tipo,
-                Fecha_asignacion = request.FechaAsignacion,
-                Fecha_Expiracion = request.FechaExpiracion,
-                Estado = request.Estado
-            };
-        }
-
-        private static Subdominio MapSubdominio(SubdominioRequestDTO request)
-        {
-            return new Subdominio
-            {
-                Id_usuario = request.IdUsuario,
-                Nombre_url = request.NombreUrl,
-                Fecha_asignacion = request.FechaAsignacion,
-                Fecha_Expiracion = request.FechaExpiracion,
-                Estado = request.Estado
-            };
-        }
-
-        private static WAF MapWaf(WafRequestDTO request)
-        {
-            return new WAF
-            {
-                Id_usuario = request.IdUsuario,
-                Fecha = request.Fecha,
-                Estado = request.Estado,
-                Observaciones = request.Observaciones
-            };
-        }
-
-        private static EvidenciasPruebas MapEvidencia(EvidenciaPruebaRequestDTO request)
-        {
-            return new EvidenciasPruebas
-            {
-                Id_usuario = request.IdUsuario,
-                Ruta_pdf = request.RutaPdf,
-                Fecha = request.Fecha,
-                EstadoValidacion = string.IsNullOrWhiteSpace(request.EstadoValidacion) ? "Pendiente" : request.EstadoValidacion!,
-                Observaciones = request.Observaciones
-            };
-        }
-
-        private static IEnumerable<Servidor> AplicarFiltrosReporte(IEnumerable<Servidor> servidores, string? estado, string? etapa, string? tipoUso, string? buscar, bool soloPendientes)
+        private static IEnumerable<Servidor> AplicarFiltrosReporte(
+            IEnumerable<Servidor> servidores,
+            string? estado, string? etapa, string? tipoUso, string? buscar, bool soloPendientes)
         {
             var query = servidores.AsEnumerable();
 
             if (!string.IsNullOrWhiteSpace(estado))
-            {
                 query = query.Where(s => string.Equals(s.Estado, estado, StringComparison.OrdinalIgnoreCase));
-            }
 
             if (!string.IsNullOrWhiteSpace(etapa))
-            {
                 query = query.Where(s =>
-                    string.Equals(s.EtapaOperativa, etapa, StringComparison.OrdinalIgnoreCase) ||
+                    string.Equals(s.EtapaOperativa,       etapa, StringComparison.OrdinalIgnoreCase) ||
                     string.Equals(s.EtapaVulnerabilidades, etapa, StringComparison.OrdinalIgnoreCase));
-            }
 
             if (!string.IsNullOrWhiteSpace(tipoUso))
-            {
                 query = query.Where(s => string.Equals(s.TipoUso, tipoUso, StringComparison.OrdinalIgnoreCase));
-            }
 
             if (!string.IsNullOrWhiteSpace(buscar))
-            {
                 query = query.Where(s =>
                     (s.Hostname?.Contains(buscar, StringComparison.OrdinalIgnoreCase) ?? false) ||
                     (s.Funcion?.Contains(buscar, StringComparison.OrdinalIgnoreCase) ?? false) ||
-                    (s.Solicitud?.Titulo?.Contains(buscar, StringComparison.OrdinalIgnoreCase) ?? false) ||
+                    (s.Solicitud?.NombreServidor?.Contains(buscar, StringComparison.OrdinalIgnoreCase) ?? false) ||
                     (s.Solicitud?.Folio?.Contains(buscar, StringComparison.OrdinalIgnoreCase) ?? false));
-            }
 
             if (soloPendientes)
-            {
                 query = query.Where(s =>
                     !s.ComunicacionValidada ||
-                    !s.ParchesAplicados ||
-                    !s.XdrInstalado ||
+                    !s.ParchesAplicados     ||
+                    !s.XdrInstalado         ||
                     !s.CredencialesEntregadas ||
-                    !s.WafConfigurado ||
-                    !s.EvidenciaValidada ||
+                    !s.WafConfigurado       ||
+                    !s.EvidenciaValidada    ||
                     (!string.IsNullOrWhiteSpace(s.EtapaVulnerabilidades) &&
                         !string.Equals(s.EtapaVulnerabilidades, "Completado", StringComparison.OrdinalIgnoreCase) &&
-                        !string.Equals(s.EtapaVulnerabilidades, "Cerrado", StringComparison.OrdinalIgnoreCase)));
-            }
+                        !string.Equals(s.EtapaVulnerabilidades, "Cerrado",    StringComparison.OrdinalIgnoreCase)));
 
             return query.OrderBy(s => s.Hostname).ThenBy(s => s.Id);
         }

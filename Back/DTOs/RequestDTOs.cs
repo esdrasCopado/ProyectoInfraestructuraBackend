@@ -24,28 +24,29 @@ namespace SolicitudServidores.Back.DTOs
 
     public class CreateUsuarioRequest
     {
-        public string NombreCompleto { get; set; } = string.Empty;
-        public string Correo { get; set; } = string.Empty;
+        public string Nombre { get; set; } = string.Empty;
+        public string Apellidos { get; set; } = string.Empty;
+        public string Email { get; set; } = string.Empty;
         public string Password { get; set; } = string.Empty;
-        public string? Rol { get; set; }
-        public string? Permisos { get; set; }
-        public string? Puesto { get; set; }
-        public string? Celular { get; set; }
-        public string? NumeroPuesto { get; set; }
-        public List<string>? PermisosCategoria { get; set; }
+        public int RoleId { get; set; }
+        public int? DependencyId { get; set; }
+        public string? NumeroEmpleado { get; set; }
+        public string? Cargo { get; set; }
+        public string? Phone { get; set; }
     }
 
     public class UpdateUsuarioRequest
     {
-        public string? NombreCompleto { get; set; }
-        public string? Correo { get; set; }
+        public string? Nombre { get; set; }
+        public string? Apellidos { get; set; }
+        public string? Email { get; set; }
         public string? Password { get; set; }
-        public string? Rol { get; set; }
-        public string? Permisos { get; set; }
-        public string? Puesto { get; set; }
-        public string? Celular { get; set; }
-        public string? NumeroPuesto { get; set; }
-        public List<string>? PermisosCategoria { get; set; }
+        public int? RoleId { get; set; }
+        public int? DependencyId { get; set; }
+        public string? NumeroEmpleado { get; set; }
+        public string? Cargo { get; set; }
+        public string? Phone { get; set; }
+        public bool? Activo { get; set; }
     }
 
     public class CreateSolicitudRequest
@@ -95,6 +96,7 @@ namespace SolicitudServidores.Back.DTOs
     public class CreateServidorRequest
     {
         public long? IdSolicitud { get; set; }
+        public int? DependencyId { get; set; }
         public string? Estado { get; set; }
         public DateTime? Expiracion { get; set; }
         public string? Hostname { get; set; }

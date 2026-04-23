@@ -1,7 +1,6 @@
 using Microsoft.AspNetCore.Mvc;
 using SolicitudServidores.Back.DTOs;
 using SolicitudServidores.DTOs;
-using SolicitudServidores.Helpers;
 using SolicitudServidores.Repositories.Interfaces;
 using SolicitudServidores.Utilities;
 
@@ -31,23 +30,29 @@ namespace SolicitudServidores.Controllers
                 return Unauthorized("Credenciales inválidas.");
 
             var passwordHash = Encriptar.EncriptarSHA256(request.Password);
-            if (usuario.Password != passwordHash)
+            if (usuario.PasswordHash != passwordHash)
                 return Unauthorized("Credenciales inválidas.");
+
+            if (!usuario.Activo)
+                return Unauthorized("La cuenta está desactivada.");
 
             var token = _crearJWT.GenerarToken(usuario);
 
             var userDto = new UsuarioDTO
             {
-                Id = usuario.Id,
-                NombreCompleto = usuario.NombreCompleto,
-                Rol = string.IsNullOrWhiteSpace(usuario.Rol) ? usuario.Permisos : usuario.Rol,
-                Correo = usuario.Correo,
-                Permisos = usuario.Permisos,
-                Puesto = usuario.Puesto,
-                Celular = usuario.Celular,
-                NumeroPuesto = usuario.NumeroPuesto,
-                ImagenUrl = usuario.ImagenUrl,
-                PermisosCategoria = usuario.PermisoCategorias.Select(p => p.Categoria).ToList()
+                Id             = usuario.Id,
+                Nombre         = usuario.Nombre,
+                Apellidos      = usuario.Apellidos,
+                RoleId         = usuario.RoleId,
+                RolNombre      = usuario.Rol?.Nombre ?? string.Empty,
+                DependencyId   = usuario.DependencyId,
+                Email          = usuario.Email,
+                NumeroEmpleado = usuario.NumeroEmpleado,
+                Cargo          = usuario.Cargo,
+                Phone          = usuario.Phone,
+                Activo         = usuario.Activo,
+                LastLoginAt    = usuario.LastLoginAt,
+                CreatedAt      = usuario.CreatedAt
             };
 
             return Ok(new LoginResponse { Token = token, User = userDto });

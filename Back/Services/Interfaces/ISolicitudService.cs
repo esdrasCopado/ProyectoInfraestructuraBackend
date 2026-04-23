@@ -1,4 +1,3 @@
-using SolicitudServidores.Back.DTOs;
 using SolicitudServidores.DTOs;
 using SolicitudServidores.Models;
 
@@ -8,13 +7,14 @@ namespace SolicitudServidores.Services.Interfaces
     {
         Task<IEnumerable<Solicitud>> GetAllAsync(int pagina = 0, int cantidad = 20);
         Task<Solicitud?> GetByIdAsync(long id);
-        Task<IEnumerable<Solicitud>> GetByUsuarioAsync(long idUsuario);
-        Task<DashboardResumenDto> GetDashboardResumenAsync();
-        Task<IEnumerable<Solicitud>> GetNotificacionesNuevasAsync();
-        Task<Solicitud> CreateAsync(CreateSolicitudRequest request);
-        Task<Solicitud?> UpdateAsync(long id, UpdateSolicitudRequest request);
-        Task<Solicitud?> ActualizarEstadoAsync(long id, ActualizarEstadoRequest request);
-        Task<Solicitud?> MarcarNotificacionLeidaAsync(long id);
-        Task<Solicitud?> DeleteAsync(long id);
+        Task<Solicitud?> GetByFolioAsync(string folio);
+        Task<IEnumerable<Solicitud>> GetByDependencyAsync(int dependencyId);
+        Task<IEnumerable<Solicitud>> GetByEstatusAsync(string estatus);
+        Task<SolicitudDashboardDto> GetDashboardAsync();
+        Task<Solicitud> CreateAsync(CreateSolicitudRequest request, long createdBy);
+        Task<Solicitud?> UpdateAsync(long id, UpdateSolicitudRequest request, long updatedBy);
+        Task<Solicitud?> ActualizarEstatusAsync(long id, ActualizarEstatusRequest request, long updatedBy);
+        Task<Solicitud?> AsignarServidorAsync(long solicitudId, long serverId, long updatedBy);
+        Task<Solicitud?> SoftDeleteAsync(long id);
     }
 }

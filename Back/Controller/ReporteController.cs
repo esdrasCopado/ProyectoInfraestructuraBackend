@@ -19,12 +19,6 @@ namespace SolicitudServidores.Controllers
         // ─── 1. Solicitudes ───────────────────────────────────────────────
 
         /// <summary>1.1 Solicitudes por dependencia</summary>
-        /// <remarks>
-        /// Devuelve todas las solicitudes con información del responsable y estatus de procesamiento.
-        /// Se puede filtrar por rango de fecha de creación.
-        /// </remarks>
-        /// <param name="fechaInicio">Fecha inicial del rango (yyyy-MM-dd)</param>
-        /// <param name="fechaFin">Fecha final del rango (yyyy-MM-dd)</param>
         [HttpGet("solicitudes/por-dependencia")]
         [ProducesResponseType(typeof(List<Reporte11ItemDto>), StatusCodes.Status200OK)]
         public async Task<IActionResult> SolicitudesPorDependencia(
@@ -32,25 +26,25 @@ namespace SolicitudServidores.Controllers
             [FromQuery] DateTime? fechaFin)
         {
             var query = _db.Solicitudes
-                .Include(s => s.Usuario)
+                .Include(s => s.CreadoPor).ThenInclude(u => u!.Rol)
                 .AsQueryable();
 
             if (fechaInicio.HasValue)
-                query = query.Where(s => s.Fecha_creacion >= fechaInicio.Value);
+                query = query.Where(s => s.CreatedAt >= fechaInicio.Value);
             if (fechaFin.HasValue)
-                query = query.Where(s => s.Fecha_creacion <= fechaFin.Value);
+                query = query.Where(s => s.CreatedAt <= fechaFin.Value);
 
             var result = await query
-                .OrderBy(s => s.Usuario!.Rol)
-                .ThenBy(s => s.Fecha_creacion)
+                .OrderBy(s => s.CreadoPor!.Rol!.Nombre)
+                .ThenBy(s => s.CreatedAt)
                 .Select(s => new Reporte11ItemDto
                 {
-                    FolioSolicitud       = s.Folio,
-                    Dependencia          = s.Usuario != null ? s.Usuario.Rol : string.Empty,
-                    Responsable          = s.Usuario != null ? s.Usuario.NombreCompleto : string.Empty,
-                    Contacto             = s.Usuario != null ? s.Usuario.Correo : string.Empty,
-                    EstatusProcesamieto  = s.EtapaActual,
-                    FechaCreacion        = s.Fecha_creacion,
+                    FolioSolicitud      = s.Folio,
+                    Dependencia         = s.CreadoPor != null ? s.CreadoPor.Rol!.Nombre : string.Empty,
+                    Responsable         = s.CreadoPor != null ? s.CreadoPor.Nombre + " " + s.CreadoPor.Apellidos : string.Empty,
+                    Contacto            = s.CreadoPor != null ? s.CreadoPor.Email : string.Empty,
+                    EstatusProcesamieto = s.Estatus,
+                    FechaCreacion       = s.CreatedAt,
                 })
                 .ToListAsync();
 
@@ -58,12 +52,6 @@ namespace SolicitudServidores.Controllers
         }
 
         /// <summary>1.2 Recursos solicitados (totalizado)</summary>
-        /// <remarks>
-        /// Lista cada servidor asociado a una solicitud con sus recursos (vCPU, RAM, Almacenamiento).
-        /// Incluye la suma total al final. Se puede filtrar por rango de fecha.
-        /// </remarks>
-        /// <param name="fechaInicio">Fecha inicial del rango (yyyy-MM-dd)</param>
-        /// <param name="fechaFin">Fecha final del rango (yyyy-MM-dd)</param>
         [HttpGet("solicitudes/recursos-solicitados")]
         [ProducesResponseType(typeof(Reporte12ResponseDto), StatusCodes.Status200OK)]
         public async Task<IActionResult> RecursosSolicitados(
@@ -71,41 +59,42 @@ namespace SolicitudServidores.Controllers
             [FromQuery] DateTime? fechaFin)
         {
             var solicitudQuery = _db.Solicitudes
-                .Include(s => s.Usuario)
-                .Include(s => s.Servidores)
+                .Include(s => s.CreadoPor).ThenInclude(u => u!.Rol)
+                .Include(s => s.Servidor)
                 .AsQueryable();
 
             if (fechaInicio.HasValue)
-                solicitudQuery = solicitudQuery.Where(s => s.Fecha_creacion >= fechaInicio.Value);
+                solicitudQuery = solicitudQuery.Where(s => s.CreatedAt >= fechaInicio.Value);
             if (fechaFin.HasValue)
-                solicitudQuery = solicitudQuery.Where(s => s.Fecha_creacion <= fechaFin.Value);
+                solicitudQuery = solicitudQuery.Where(s => s.CreatedAt <= fechaFin.Value);
 
             var solicitudes = await solicitudQuery.ToListAsync();
 
             var items = solicitudes
-                .SelectMany(s => s.Servidores.Select(srv => new Reporte12ItemDto
+                .Where(s => s.Servidor != null)
+                .Select(s => new Reporte12ItemDto
                 {
                     FolioSolicitud        = s.Folio,
-                    Dependencia           = s.Usuario?.Rol ?? string.Empty,
-                    Responsable           = s.Usuario?.NombreCompleto ?? string.Empty,
-                    Contacto              = s.Usuario?.Correo ?? string.Empty,
-                    EstatusProcesamieto   = s.EtapaActual,
-                    IpServidor            = srv.Ip,
-                    AdministradorServidor = srv.ResponsableInfraestructura,
-                    DescripcionProyecto   = s.Descripcion,
-                    SistemaOperativo      = srv.SistemaOperativo,
-                    Vcpu                  = srv.Nucleos,
-                    Ram                   = srv.Ram,
-                    Almacenamiento        = srv.Almacenamiento,
-                    FechaCreacion         = s.Fecha_creacion,
-                }))
+                    Dependencia           = s.CreadoPor?.Rol?.Nombre ?? string.Empty,
+                    Responsable           = s.CreadoPor != null ? s.CreadoPor.Nombre + " " + s.CreadoPor.Apellidos : string.Empty,
+                    Contacto              = s.CreadoPor?.Email ?? string.Empty,
+                    EstatusProcesamieto   = s.Estatus,
+                    IpServidor            = s.Servidor!.Ip,
+                    AdministradorServidor = s.Servidor.ResponsableInfraestructura,
+                    DescripcionProyecto   = s.DescripcionUso,
+                    SistemaOperativo      = s.Servidor.SistemaOperativo,
+                    Vcpu                  = s.Servidor.Nucleos,
+                    Ram                   = s.Servidor.Ram,
+                    Almacenamiento        = s.Servidor.Almacenamiento,
+                    FechaCreacion         = s.CreatedAt,
+                })
                 .ToList();
 
             var response = new Reporte12ResponseDto
             {
-                Items              = items,
-                TotalVcpu          = items.Sum(i => i.Vcpu),
-                TotalRam           = items.Sum(i => i.Ram),
+                Items               = items,
+                TotalVcpu           = items.Sum(i => i.Vcpu),
+                TotalRam            = items.Sum(i => i.Ram),
                 TotalAlmacenamiento = items.Sum(i => i.Almacenamiento),
             };
 
@@ -113,11 +102,6 @@ namespace SolicitudServidores.Controllers
         }
 
         /// <summary>1.3 Reporte por IP</summary>
-        /// <remarks>
-        /// Dado una dirección IP, devuelve el servidor correspondiente con su solicitud,
-        /// subdominios aprobados y VPNs asociadas.
-        /// </remarks>
-        /// <param name="ip">Dirección IP del servidor a consultar</param>
         [HttpGet("solicitudes/por-ip")]
         [ProducesResponseType(typeof(List<Reporte13ItemDto>), StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status400BadRequest)]
@@ -128,32 +112,37 @@ namespace SolicitudServidores.Controllers
 
             var servidores = await _db.Servidores
                 .Include(s => s.Solicitud)
-                    .ThenInclude(sol => sol!.Usuario)
-                .Include(s => s.Subdominios)
-                .Include(s => s.VPNs)
+                    .ThenInclude(sol => sol!.CreadoPor)
+                        .ThenInclude(u => u!.Rol)
+                .Include(s => s.ServerSubdominios)
+                    .ThenInclude(ss => ss.Subdominio)
+                .Include(s => s.ServerVpns)
+                    .ThenInclude(sv => sv.Vpn)
                 .Where(s => s.Ip == ip)
                 .ToListAsync();
 
             var result = servidores.Select(srv => new Reporte13ItemDto
             {
                 FolioSolicitud        = srv.Solicitud?.Folio ?? string.Empty,
-                Dependencia           = srv.Solicitud?.Usuario?.Rol ?? string.Empty,
-                Responsable           = srv.Solicitud?.Usuario?.NombreCompleto ?? string.Empty,
-                ContactoResponsable   = srv.Solicitud?.Usuario?.Correo ?? string.Empty,
-                EstatusProcesamieto   = srv.Solicitud?.EtapaActual ?? string.Empty,
+                Dependencia           = srv.Solicitud?.CreadoPor?.Rol?.Nombre ?? string.Empty,
+                Responsable           = srv.Solicitud?.CreadoPor != null
+                                            ? srv.Solicitud.CreadoPor.Nombre + " " + srv.Solicitud.CreadoPor.Apellidos
+                                            : string.Empty,
+                ContactoResponsable   = srv.Solicitud?.CreadoPor?.Email ?? string.Empty,
+                EstatusProcesamieto   = srv.Solicitud?.Estatus ?? string.Empty,
                 IpServidor            = srv.Ip,
                 AdministradorServidor = srv.ResponsableInfraestructura,
-                DescripcionProyecto   = srv.Solicitud?.Descripcion,
+                DescripcionProyecto   = srv.Solicitud?.DescripcionUso,
                 SistemaOperativo      = srv.SistemaOperativo,
                 Vcpu                  = srv.Nucleos,
                 Ram                   = srv.Ram,
                 Almacenamiento        = srv.Almacenamiento,
-                SubdominiosAprobados  = srv.Subdominios
-                    .Where(sub => sub.Estado == "Aprobado")
-                    .Select(sub => sub.Nombre_url)
+                SubdominiosAprobados  = srv.ServerSubdominios
+                    .Where(ss => ss.Subdominio.Status == "aprobado")
+                    .Select(ss => ss.Subdominio.ApprovedName ?? ss.Subdominio.RequestedName)
                     .ToList(),
-                Vpns = srv.VPNs
-                    .Select(v => v.Folio)
+                Vpns = srv.ServerVpns
+                    .Select(sv => sv.Vpn.VpnId.ToString())
                     .ToList(),
             }).ToList();
 
@@ -163,70 +152,72 @@ namespace SolicitudServidores.Controllers
         // ─── 2. Infraestructura ───────────────────────────────────────────
 
         /// <summary>2.1 Reporte de VPNs</summary>
-        /// <remarks>Lista todas las VPNs con su estado, fechas y servidor asociado. Filtrable por estado.</remarks>
-        /// <param name="estado">Filtro opcional por estado (ej. Activa, Expirada)</param>
         [HttpGet("infraestructura/vpn")]
         [ProducesResponseType(typeof(List<Reporte21ItemDto>), StatusCodes.Status200OK)]
         public async Task<IActionResult> ReporteVpn([FromQuery] string? estado)
         {
             var query = _db.VPNs
-                .Include(v => v.Servidor)
-                    .ThenInclude(s => s!.Solicitud)
-                .Include(v => v.Usuario)
+                .Include(v => v.ServerVpns)
+                    .ThenInclude(sv => sv.Servidor)
+                        .ThenInclude(s => s!.Solicitud)
                 .AsQueryable();
 
             if (!string.IsNullOrWhiteSpace(estado))
                 query = query.Where(v => v.Estado == estado);
 
-            var result = await query
-                .OrderBy(v => v.Servidor!.Hostname)
-                .Select(v => new Reporte21ItemDto
+            var vpns = await query.ToListAsync();
+
+            var result = vpns.Select(v =>
+            {
+                var servidor = v.ServerVpns.Select(sv => sv.Servidor).FirstOrDefault();
+                return new Reporte21ItemDto
                 {
-                    FolioVpn       = v.Folio,
-                    Tipo           = v.Tipo,
-                    Estado         = v.Estado,
-                    FechaAsignacion = v.Fecha_asignacion,
-                    FechaExpiracion = v.Fecha_Expiracion,
-                    Responsable    = v.Usuario != null ? v.Usuario.NombreCompleto : null,
-                    Hostname       = v.Servidor != null ? v.Servidor.Hostname : string.Empty,
-                    IpServidor     = v.Servidor != null ? v.Servidor.Ip : null,
-                    FolioSolicitud = v.Servidor != null && v.Servidor.Solicitud != null ? v.Servidor.Solicitud.Folio : string.Empty,
-                })
-                .ToListAsync();
+                    FolioVpn        = v.VpnId.ToString(),
+                    Tipo            = v.VpnType,
+                    Estado          = null,
+                    FechaAsignacion = v.CreatedAt,
+                    FechaExpiracion = null,
+                    Responsable     = v.Responsable,
+                    Hostname        = servidor?.Hostname ?? string.Empty,
+                    IpServidor      = servidor?.Ip,
+                    FolioSolicitud  = servidor?.Solicitud?.Folio ?? string.Empty,
+                };
+            }).ToList();
 
             return Ok(result);
         }
 
         /// <summary>2.2 Reporte de subdominios</summary>
-        /// <remarks>Lista todos los subdominios con su estado, fechas y servidor asociado. Filtrable por estado.</remarks>
-        /// <param name="estado">Filtro opcional por estado (ej. Aprobado, Pendiente, Expirado)</param>
         [HttpGet("infraestructura/subdominios")]
         [ProducesResponseType(typeof(List<Reporte22ItemDto>), StatusCodes.Status200OK)]
         public async Task<IActionResult> ReporteSubdominios([FromQuery] string? estado)
         {
             var query = _db.Subdominios
-                .Include(sub => sub.Servidor)
-                    .ThenInclude(s => s!.Solicitud)
-                .Include(sub => sub.Usuario)
+                .Include(sub => sub.ServerSubdominios)
+                    .ThenInclude(ss => ss.Servidor)
+                        .ThenInclude(s => s!.Solicitud)
                 .AsQueryable();
 
             if (!string.IsNullOrWhiteSpace(estado))
-                query = query.Where(sub => sub.Estado == estado);
+                query = query.Where(sub => sub.Status == estado);
 
-            var result = await query
-                .OrderBy(sub => sub.Nombre_url)
-                .Select(sub => new Reporte22ItemDto
+            var subdominios = await query.ToListAsync();
+
+            var result = subdominios.Select(sub =>
+            {
+                var servidor = sub.ServerSubdominios.Select(ss => ss.Servidor).FirstOrDefault();
+                return new Reporte22ItemDto
                 {
-                    NombreUrl      = sub.Nombre_url,
-                    Estado         = sub.Estado,
-                    FechaAsignacion = sub.Fecha_asignacion,
-                    FechaExpiracion = sub.Fecha_Expiracion,
-                    Responsable    = sub.Usuario != null ? sub.Usuario.NombreCompleto : null,
-                    Hostname       = sub.Servidor != null ? sub.Servidor.Hostname : string.Empty,
-                    IpServidor     = sub.Servidor != null ? sub.Servidor.Ip : null,
-                    FolioSolicitud = sub.Servidor != null && sub.Servidor.Solicitud != null ? sub.Servidor.Solicitud.Folio : string.Empty,
-                })
-                .ToListAsync();
+                    NombreUrl       = sub.ApprovedName ?? sub.RequestedName,
+                    Estado          = sub.Status,
+                    FechaAsignacion = sub.AssignedAt,
+                    FechaExpiracion = sub.ExpiresAt,
+                    Responsable     = null,
+                    Hostname        = servidor?.Hostname ?? string.Empty,
+                    IpServidor      = servidor?.Ip,
+                    FolioSolicitud  = servidor?.Solicitud?.Folio ?? string.Empty,
+                };
+            }).ToList();
 
             return Ok(result);
         }
@@ -234,36 +225,33 @@ namespace SolicitudServidores.Controllers
         // ─── 3. Seguridad ─────────────────────────────────────────────────
 
         /// <summary>3.1 Vulnerabilidades por servidor</summary>
-        /// <remarks>
-        /// Muestra el estado de seguridad de cada servidor: etapa de vulnerabilidades,
-        /// parches aplicados, XDR instalado, WAF configurado y evidencias validadas.
-        /// </remarks>
         [HttpGet("seguridad/vulnerabilidades")]
         [ProducesResponseType(typeof(List<Reporte31ItemDto>), StatusCodes.Status200OK)]
         public async Task<IActionResult> ReporteVulnerabilidades()
         {
             var servidores = await _db.Servidores
                 .Include(s => s.Solicitud)
-                    .ThenInclude(sol => sol!.Usuario)
+                    .ThenInclude(sol => sol!.CreadoPor)
+                        .ThenInclude(u => u!.Rol)
                 .OrderBy(s => s.Hostname)
                 .ToListAsync();
 
             var result = servidores.Select(s => new Reporte31ItemDto
             {
-                FolioSolicitud          = s.Solicitud?.Folio ?? string.Empty,
-                Hostname                = s.Hostname,
-                IpServidor              = s.Ip,
-                Dependencia             = s.Solicitud?.Usuario?.Rol ?? string.Empty,
-                EtapaVulnerabilidades   = s.EtapaVulnerabilidades,
-                ParchesAplicados        = s.ParchesAplicados,
-                FechaParches            = s.FechaParches,
-                UsuarioParches          = s.UsuarioParches,
-                XdrInstalado            = s.XdrInstalado,
-                FechaXdr                = s.FechaXdr,
-                UsuarioXdr              = s.UsuarioXdr,
-                WafConfigurado          = s.WafConfigurado,
-                FechaWaf                = s.FechaConfiguracionWaf,
-                EvidenciaValidada       = s.EvidenciaValidada,
+                FolioSolicitud           = s.Solicitud?.Folio ?? string.Empty,
+                Hostname                 = s.Hostname,
+                IpServidor               = s.Ip,
+                Dependencia              = s.Solicitud?.CreadoPor?.Rol?.Nombre ?? string.Empty,
+                EtapaVulnerabilidades    = s.EtapaVulnerabilidades,
+                ParchesAplicados         = s.ParchesAplicados,
+                FechaParches             = s.FechaParches,
+                UsuarioParches           = s.UsuarioParches,
+                XdrInstalado             = s.XdrInstalado,
+                FechaXdr                 = s.FechaXdr,
+                UsuarioXdr               = s.UsuarioXdr,
+                WafConfigurado           = s.WafConfigurado,
+                FechaWaf                 = s.FechaConfiguracionWaf,
+                EvidenciaValidada        = s.EvidenciaValidada,
                 FechaValidacionEvidencia = s.FechaValidacionEvidencia,
             }).ToList();
 
@@ -271,18 +259,14 @@ namespace SolicitudServidores.Controllers
         }
 
         /// <summary>3.2 Comunicaciones validadas por IP</summary>
-        /// <remarks>
-        /// Devuelve el estado de validación de comunicación de cada servidor,
-        /// con fecha y usuario que realizó la validación. Filtrable por estado de validación.
-        /// </remarks>
-        /// <param name="soloValidadas">Si es true, devuelve únicamente las comunicaciones validadas</param>
         [HttpGet("seguridad/comunicaciones-por-ip")]
         [ProducesResponseType(typeof(List<Reporte32ItemDto>), StatusCodes.Status200OK)]
         public async Task<IActionResult> ComunicacionesPorIp([FromQuery] bool? soloValidadas)
         {
             var query = _db.Servidores
                 .Include(s => s.Solicitud)
-                    .ThenInclude(sol => sol!.Usuario)
+                    .ThenInclude(sol => sol!.CreadoPor)
+                        .ThenInclude(u => u!.Rol)
                 .AsQueryable();
 
             if (soloValidadas == true)
@@ -292,13 +276,14 @@ namespace SolicitudServidores.Controllers
                 .OrderBy(s => s.Ip)
                 .Select(s => new Reporte32ItemDto
                 {
-                    FolioSolicitud               = s.Solicitud != null ? s.Solicitud.Folio : string.Empty,
-                    Hostname                     = s.Hostname,
-                    IpServidor                   = s.Ip,
-                    Dependencia                  = s.Solicitud != null && s.Solicitud.Usuario != null
-                                                       ? s.Solicitud.Usuario.Rol : string.Empty,
-                    ComunicacionValidada         = s.ComunicacionValidada,
-                    FechaValidacionComunicacion  = s.FechaValidacionComunicacion,
+                    FolioSolicitud                = s.Solicitud != null ? s.Solicitud.Folio : string.Empty,
+                    Hostname                      = s.Hostname,
+                    IpServidor                    = s.Ip,
+                    Dependencia                   = s.Solicitud != null && s.Solicitud.CreadoPor != null
+                                                        ? s.Solicitud.CreadoPor.Rol!.Nombre
+                                                        : string.Empty,
+                    ComunicacionValidada          = s.ComunicacionValidada,
+                    FechaValidacionComunicacion   = s.FechaValidacionComunicacion,
                     UsuarioValidacionComunicacion = s.UsuarioValidacionComunicacion,
                 })
                 .ToListAsync();
@@ -309,24 +294,19 @@ namespace SolicitudServidores.Controllers
         // ─── 4. Resumen ejecutivo ─────────────────────────────────────────
 
         /// <summary>4.1 Estatus de solicitudes</summary>
-        /// <remarks>
-        /// Devuelve un resumen agrupado por etapa y estado de todas las solicitudes,
-        /// junto con el total general.
-        /// </remarks>
         [HttpGet("resumen/estatus-solicitudes")]
         [ProducesResponseType(typeof(Reporte41ResponseDto), StatusCodes.Status200OK)]
         public async Task<IActionResult> EstatusSolicitudes()
         {
             var solicitudes = await _db.Solicitudes
-                .GroupBy(s => new { s.EtapaActual, s.Estado })
+                .GroupBy(s => s.Estatus)
                 .Select(g => new Reporte41EstatusDto
                 {
-                    Etapa  = g.Key.EtapaActual,
-                    Estado = g.Key.Estado,
+                    Etapa  = g.Key,
+                    Estado = g.Key,
                     Total  = g.Count(),
                 })
                 .OrderBy(r => r.Etapa)
-                .ThenBy(r => r.Estado)
                 .ToListAsync();
 
             var response = new Reporte41ResponseDto
@@ -339,29 +319,25 @@ namespace SolicitudServidores.Controllers
         }
 
         /// <summary>4.2 Recursos totalizados</summary>
-        /// <remarks>
-        /// Suma total de vCPU, RAM y almacenamiento de todos los servidores registrados,
-        /// con desglose por solicitud.
-        /// </remarks>
         [HttpGet("resumen/recursos-totalizados")]
         [ProducesResponseType(typeof(Reporte42ResponseDto), StatusCodes.Status200OK)]
         public async Task<IActionResult> RecursosTotalizados()
         {
             var solicitudes = await _db.Solicitudes
-                .Include(s => s.Usuario)
-                .Include(s => s.Servidores)
-                .Where(s => s.Servidores.Any())
+                .Include(s => s.CreadoPor).ThenInclude(u => u!.Rol)
+                .Include(s => s.Servidor)
+                .Where(s => s.Servidor != null)
                 .OrderBy(s => s.Folio)
                 .ToListAsync();
 
             var items = solicitudes.Select(s => new Reporte42ItemDto
             {
                 FolioSolicitud = s.Folio,
-                Dependencia    = s.Usuario?.Rol ?? string.Empty,
-                Responsable    = s.Usuario?.NombreCompleto ?? string.Empty,
-                Vcpu           = s.Servidores.Sum(srv => srv.Nucleos),
-                Ram            = s.Servidores.Sum(srv => srv.Ram),
-                Almacenamiento = s.Servidores.Sum(srv => srv.Almacenamiento),
+                Dependencia    = s.CreadoPor?.Rol?.Nombre ?? string.Empty,
+                Responsable    = s.CreadoPor != null ? s.CreadoPor.Nombre + " " + s.CreadoPor.Apellidos : string.Empty,
+                Vcpu           = s.Servidor!.Nucleos,
+                Ram            = s.Servidor.Ram,
+                Almacenamiento = s.Servidor.Almacenamiento,
             }).ToList();
 
             var response = new Reporte42ResponseDto
@@ -370,7 +346,7 @@ namespace SolicitudServidores.Controllers
                 TotalVcpu           = items.Sum(i => i.Vcpu),
                 TotalRam            = items.Sum(i => i.Ram),
                 TotalAlmacenamiento = items.Sum(i => i.Almacenamiento),
-                TotalServidores     = solicitudes.Sum(s => s.Servidores.Count),
+                TotalServidores     = items.Count,
             };
 
             return Ok(response);

@@ -17,15 +17,13 @@ namespace SolicitudServidores.Utilities
 
         public string GenerarToken(Usuario modelo)
         {
-            var rol = string.IsNullOrWhiteSpace(modelo.Rol) ? modelo.Permisos : modelo.Rol;
+            var rol = modelo.Rol?.Nombre ?? string.Empty;
             var userClaim = new[]
             {
                 new Claim(ClaimTypes.NameIdentifier, modelo.Id.ToString()),
-                new Claim(ClaimTypes.Name, modelo.NombreCompleto),
-                new Claim(ClaimTypes.Email, modelo.Correo),
+                new Claim(ClaimTypes.Name, $"{modelo.Nombre} {modelo.Apellidos}".Trim()),
+                new Claim(ClaimTypes.Email, modelo.Email),
                 new Claim(ClaimTypes.Role, rol),
-                new Claim("ImagenUrl", modelo.ImagenUrl ?? string.Empty),
-                new Claim("Permisos", modelo.Permisos ?? string.Empty)
             };
 
             var jwtKey = _configuration["JWT:key"] ?? _configuration["JWT_SECRET"];

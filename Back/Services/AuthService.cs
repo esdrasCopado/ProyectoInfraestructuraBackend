@@ -29,8 +29,8 @@ namespace SolicitudServidores.Back.Services
             var claims = new[]
             {
                 new Claim(ClaimTypes.NameIdentifier, user.Id.ToString()),
-                new Claim(ClaimTypes.Email, user.Correo ?? ""),
-                new Claim(ClaimTypes.Role, user.Permisos ?? "Dependencia / Cliente")
+                new Claim(ClaimTypes.Email, user.Email),
+                new Claim(ClaimTypes.Role, user.Rol?.Nombre ?? "dependencia")
             };
 
             var token = new JwtSecurityToken(

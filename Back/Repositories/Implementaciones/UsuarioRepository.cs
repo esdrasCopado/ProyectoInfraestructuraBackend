@@ -1,8 +1,7 @@
-﻿using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore;
 using SolicitudServidores.DBContext;
 using SolicitudServidores.Helpers;
 using SolicitudServidores.Models;
-using SolicitudServidores.Models.Enum;
 using SolicitudServidores.Repositories.Interfaces;
 
 namespace SolicitudServidores.Repositories.Implementaciones
@@ -25,34 +24,33 @@ namespace SolicitudServidores.Repositories.Implementaciones
 
         public async Task<Usuario?> Delete(long id)
         {
-            var usuarioModel = await _context.Usuarios.FirstOrDefaultAsync(x => x.Id == id);
-            if (usuarioModel == null)
-                return null;
+            var usuario = await _context.Usuarios.FirstOrDefaultAsync(x => x.Id == id);
+            if (usuario == null) return null;
 
-            _context.Usuarios.Remove(usuarioModel);
+            usuario.DeletedAt = DateTime.UtcNow;
             await _context.SaveChangesAsync();
-            return usuarioModel;
+            return usuario;
         }
 
-        public Task<bool> ExistsUsuario(string correo)
+        public Task<bool> ExistsUsuario(string email)
         {
-            return _context.Usuarios.AnyAsync(x => x.Correo == correo);
+            return _context.Usuarios.AnyAsync(x => x.Email == email && x.DeletedAt == null);
         }
 
         public async Task<List<Usuario>> GetAll(QueryUserPaging query)
         {
             var usuarios = _context.Usuarios
-                .Include(p => p.PermisoCategorias)
+                .Include(u => u.Rol)
+                .Include(u => u.Dependency)
+                .Where(u => u.DeletedAt == null)
                 .AsQueryable();
 
             if (!string.IsNullOrWhiteSpace(query.Role))
-            {
-                usuarios = FilterForRole(usuarios, query.Role);
-            }
+                usuarios = usuarios.Where(u => u.Rol != null && u.Rol.Nombre == query.Role);
 
             var skipNumber = (query.NumPage - 1) * query.NumSize;
             return await usuarios
-                .OrderBy(u => u.Id)
+                .OrderBy(u => u.Apellidos).ThenBy(u => u.Nombre)
                 .Skip(skipNumber)
                 .Take(query.NumSize)
                 .ToListAsync();
@@ -61,154 +59,79 @@ namespace SolicitudServidores.Repositories.Implementaciones
         public async Task<List<Usuario>> GetAll()
         {
             return await _context.Usuarios
-                .Include(p => p.PermisoCategorias)
-                .OrderBy(u => u.Id)
-                .ToListAsync();
-        }
-
-        public async Task<List<Usuario>> GetAllForEmail(QueryUserPaging query)
-        {
-            var usuarios = _context.Usuarios
-                .Include(p => p.PermisoCategorias)
-                .AsQueryable();
-
-            if (!string.IsNullOrWhiteSpace(query.Role))
-            {
-                usuarios = FilterForRole(usuarios, query.Role);
-            }
-
-            var skipNumber = (query.NumPage - 1) * query.NumSize;
-            return await usuarios
-                .OrderBy(u => u.Correo)
-                .Skip(skipNumber)
-                .Take(query.NumSize)
-                .ToListAsync();
-        }
-
-        public async Task<List<Usuario>> GetAllForName(QueryUserPaging query)
-        {
-            var usuarios = _context.Usuarios
-                .Include(p => p.PermisoCategorias)
-                .AsQueryable();
-
-            if (!string.IsNullOrWhiteSpace(query.Role))
-            {
-                usuarios = FilterForRole(usuarios, query.Role);
-            }
-
-            var skipNumber = (query.NumPage - 1) * query.NumSize;
-            return await usuarios
-                .OrderBy(u => u.NombreCompleto)
-                .Skip(skipNumber)
-                .Take(query.NumSize)
+                .Include(u => u.Rol)
+                .Include(u => u.Dependency)
+                .Where(u => u.DeletedAt == null)
+                .OrderBy(u => u.Apellidos).ThenBy(u => u.Nombre)
                 .ToListAsync();
         }
 
         public async Task<Usuario?> GetById(long id)
         {
             return await _context.Usuarios
-                .Include(p => p.PermisoCategorias)
-                .FirstOrDefaultAsync(u => u.Id == id);
-        }
-
-        public IEnumerable<string> GetRoles()
-        {
-            return RolExtensions.ObtenerTodosLosRoles();
-        }
-
-        public IEnumerable<object> GetRolesConDescripcion()
-        {
-            return RolExtensions.ObtenerTodosLosRolesConDescripcion();
-        }
-
-        public async Task<Usuario?> Update(Usuario usuario, List<string> nuevosPermisos)
-        {
-            var usuarioModel = await _context.Usuarios
-                .Include(u => u.PermisoCategorias)
-                .FirstOrDefaultAsync(x => x.Id == usuario.Id);
-
-            if (usuarioModel == null)
-                return null;
-
-            var viejosPermisos = usuarioModel.PermisoCategorias.ToList();
-            if (viejosPermisos.Count > 0)
-            {
-                _context.PermisoCategorias.RemoveRange(viejosPermisos);
-            }
-
-            usuarioModel.NombreCompleto = usuario.NombreCompleto;
-            usuarioModel.Correo = usuario.Correo;
-            usuarioModel.Permisos = usuario.Permisos;
-            usuarioModel.Rol = string.IsNullOrWhiteSpace(usuario.Rol) ? usuario.Permisos : usuario.Rol;
-            usuarioModel.Puesto = usuario.Puesto;
-            usuarioModel.Celular = usuario.Celular;
-            usuarioModel.NumeroPuesto = usuario.NumeroPuesto;
-
-            if (!string.IsNullOrWhiteSpace(usuario.Password))
-            {
-                usuarioModel.Password = usuario.Password;
-            }
-
-            usuarioModel.PermisoCategorias = nuevosPermisos
-                .Where(p => !string.IsNullOrWhiteSpace(p))
-                .Distinct(StringComparer.OrdinalIgnoreCase)
-                .Select(permiso => new PermisoCategoria
-                {
-                    Categoria = permiso,
-                    IdUsuario = usuarioModel.Id
-                })
-                .ToList();
-
-            await _context.SaveChangesAsync();
-            return await GetById(usuarioModel.Id);
+                .Include(u => u.Rol)
+                .Include(u => u.Dependency)
+                .FirstOrDefaultAsync(u => u.Id == id && u.DeletedAt == null);
         }
 
         public async Task<Usuario?> GetByEmail(string email)
         {
             return await _context.Usuarios
-                .Include(p => p.PermisoCategorias)
-                .FirstOrDefaultAsync(u => u.Correo == email);
+                .Include(u => u.Rol)
+                .Include(u => u.Dependency)
+                .FirstOrDefaultAsync(u => u.Email == email && u.DeletedAt == null);
         }
 
-        public async Task<Usuario?> UpdateImgUser(long id, string? imgUrl)
+        public async Task<Usuario?> Update(Usuario usuario)
         {
-            var usuarioModel = await _context.Usuarios.FirstOrDefaultAsync(x => x.Id == id);
-            if (usuarioModel == null)
-                return null;
+            var model = await _context.Usuarios
+                .FirstOrDefaultAsync(x => x.Id == usuario.Id && x.DeletedAt == null);
 
-            usuarioModel.ImagenUrl = imgUrl;
+            if (model == null) return null;
+
+            model.Nombre         = usuario.Nombre;
+            model.Apellidos      = usuario.Apellidos;
+            model.Email          = usuario.Email;
+            model.RoleId         = usuario.RoleId;
+            model.DependencyId   = usuario.DependencyId;
+            model.NumeroEmpleado = usuario.NumeroEmpleado;
+            model.Cargo          = usuario.Cargo;
+            model.Phone          = usuario.Phone;
+            model.Activo         = usuario.Activo;
+            model.UpdatedBy      = usuario.UpdatedBy;
+            model.UpdatedAt      = DateTime.UtcNow;
+
+            if (!string.IsNullOrWhiteSpace(usuario.PasswordHash))
+                model.PasswordHash = usuario.PasswordHash;
+
             await _context.SaveChangesAsync();
-            return usuarioModel;
+            return await GetById(model.Id);
         }
 
-        private IQueryable<Usuario> FilterForRole(IQueryable<Usuario> usuarios, string role)
+        public async Task<Usuario?> ChangePassword(long id, string passwordHash)
         {
-            return usuarios.Where(u =>
-                u.Permisos.Contains(role) ||
-                u.Rol.Contains(role));
-        }
+            var usuario = await _context.Usuarios.FirstOrDefaultAsync(x => x.Id == id && x.DeletedAt == null);
+            if (usuario == null) return null;
 
-        public async Task<Usuario?> ChangePassword(long id, string password)
-        {
-            var usuarioModel = await _context.Usuarios.FirstOrDefaultAsync(x => x.Id == id);
-            if (usuarioModel == null)
-                return null;
-
-            usuarioModel.Password = password;
+            usuario.PasswordHash = passwordHash;
+            usuario.UpdatedAt    = DateTime.UtcNow;
             await _context.SaveChangesAsync();
-            return usuarioModel;
+            return usuario;
+        }
+
+        public async Task<IEnumerable<object>> GetRoles()
+        {
+            return await _context.Roles
+                .OrderBy(r => r.Nombre)
+                .Select(r => new { r.RoleId, r.Nombre, r.Descripcion })
+                .ToListAsync<object>();
         }
 
         public string GenerateNewPassword()
         {
-            return RandomString(8);
-        }
-
-        private string RandomString(int length)
-        {
             const string chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
             var random = new Random();
-            return new string(Enumerable.Repeat(chars, length)
+            return new string(Enumerable.Repeat(chars, 8)
                 .Select(s => s[random.Next(s.Length)]).ToArray());
         }
     }

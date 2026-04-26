@@ -8,6 +8,7 @@ namespace SolicitudServidores.Services.Interfaces
         Task<IEnumerable<VPN>> GetAllAsync();
         Task<VPN?> GetByIdAsync(int id);
         Task<IEnumerable<VPN>> GetByServidorAsync(long serverId);
+        Task<IEnumerable<VPN>> GetByFolioAsync(string folio);
         Task<VPN> CreateAsync(CreateVpnRequest request);
         Task<VPN?> UpdateAsync(int id, UpdateVpnRequest request);
         Task<VPN?> DeleteAsync(int id);

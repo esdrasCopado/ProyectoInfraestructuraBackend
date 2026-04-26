@@ -24,7 +24,7 @@ export class ApiService {
   }
 
   createSolicitud(payload: unknown): Observable<Solicitud> {
-    return this.http.post<Solicitud>('/api/solicitud', payload);
+    return this.http.post<Solicitud>('/api/solicitud/completa', payload);
   }
 
   markNotificationRead(id: number): Observable<Solicitud> {

@@ -12,6 +12,7 @@ namespace SolicitudServidores.Services.Interfaces
         Task<IEnumerable<Solicitud>> GetByEstatusAsync(string estatus);
         Task<SolicitudDashboardDto> GetDashboardAsync();
         Task<Solicitud> CreateAsync(CreateSolicitudRequest request, long createdBy);
+        Task<Solicitud> CrearCompletaAsync(CreateSolicitudCompletaRequest request, long createdBy);
         Task<Solicitud?> UpdateAsync(long id, UpdateSolicitudRequest request, long updatedBy);
         Task<Solicitud?> ActualizarEstatusAsync(long id, ActualizarEstatusRequest request, long updatedBy);
         Task<Solicitud?> AsignarServidorAsync(long solicitudId, long serverId, long updatedBy);

@@ -163,7 +163,7 @@ namespace SolicitudServidores.Controllers
                 .AsQueryable();
 
             if (!string.IsNullOrWhiteSpace(estado))
-                query = query.Where(v => v.Estado == estado);
+                query = query.Where(v => v.VpnType == estado);
 
             var vpns = await query.ToListAsync();
 

@@ -58,6 +58,24 @@ namespace SolicitudServidores.Controllers
 
         // ── Mutaciones ────────────────────────────────────────────────────────
 
+        /// <summary>Crea solicitud, servidor, discos, VPNs, subdominios y carta en una sola operación transaccional.</summary>
+        [HttpPost("completa")]
+        public async Task<IActionResult> CreateCompleta([FromBody] CreateSolicitudCompletaRequest request)
+        {
+            var userId = ObtenerUserId();
+            if (userId == null) return Unauthorized();
+
+            try
+            {
+                var creada = await _service.CrearCompletaAsync(request, userId.Value);
+                return CreatedAtAction(nameof(GetById), new { id = creada.Id }, creada);
+            }
+            catch (ArgumentException ex)
+            {
+                return BadRequest(new { error = "VALIDATION_FAILED", message = ex.Message });
+            }
+        }
+
         /// <summary>Crea una solicitud directa (sin carta responsiva). El folio se genera automáticamente.</summary>
         [HttpPost]
         public async Task<IActionResult> Create([FromBody] CreateSolicitudRequest request)

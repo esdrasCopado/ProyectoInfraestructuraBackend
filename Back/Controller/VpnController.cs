@@ -36,6 +36,15 @@ namespace SolicitudServidores.Controllers
         public async Task<IActionResult> GetByServidor(long serverId)
             => Ok(await _service.GetByServidorAsync(serverId));
 
+        /// <summary>Busca VPNs por folio de solicitud (soporta búsqueda parcial para autocompletado).</summary>
+        [HttpGet("folio/{folio}")]
+        public async Task<IActionResult> GetByFolio(string folio)
+        {
+            if (string.IsNullOrWhiteSpace(folio))
+                return BadRequest("El folio no puede estar vacío.");
+            return Ok(await _service.GetByFolioAsync(folio));
+        }
+
         /// <summary>RF08 — Crea una VPN. Solo admins de infraestructura o centro de datos.</summary>
         [HttpPost]
         [Authorize(Roles = "Administrador de Infraestructura,Administrador de Centro de Datos,Administrador General")]

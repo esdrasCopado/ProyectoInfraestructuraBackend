@@ -1,5 +1,4 @@
 using Microsoft.EntityFrameworkCore;
-using SolicitudServidores.Back.Models;
 using SolicitudServidores.Models;
 
 namespace SolicitudServidores.DBContext
@@ -34,10 +33,6 @@ namespace SolicitudServidores.DBContext
 
         // ── Notificaciones ────────────────────────────────────────────────────
         public DbSet<Notification> Notifications => Set<Notification>();
-
-        // ── Legacy (conservado para compatibilidad con ServerRequest) ─────────
-        public DbSet<ServerRequest> SolicitudServidores => Set<ServerRequest>();
-        public DbSet<ServerEntry> ServidoresEntrada => Set<ServerEntry>();
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {

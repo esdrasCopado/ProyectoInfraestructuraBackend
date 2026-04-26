@@ -20,6 +20,8 @@ namespace SolicitudServidores.Services.Implementaciones
 
         public Task<IEnumerable<VPN>> GetByServidorAsync(long serverId) => _repo.GetByServerId(serverId);
 
+        public Task<IEnumerable<VPN>> GetByFolioAsync(string folio) => _repo.GetByFolio(folio);
+
         public async Task<VPN> CreateAsync(CreateVpnRequest request)
         {
             ValidarTipo(request.VpnType);

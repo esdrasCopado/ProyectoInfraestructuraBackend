@@ -31,6 +31,25 @@ namespace SolicitudServidores.Repositories.Implementaciones
                 .ToListAsync();
         }
 
+        public async Task<IEnumerable<VPN>> GetByFolio(string folio)
+        {
+            var term = folio.Trim().ToLower();
+
+            // Paso 1: obtener los IDs de servidor cuyo folio coincide
+            var serverIds = await _context.Solicitudes
+                .Where(sol => sol.ServerId != null && sol.Folio.ToLower().Contains(term))
+                .Select(sol => sol.ServerId!.Value)
+                .ToListAsync();
+
+            if (serverIds.Count == 0)
+                return Enumerable.Empty<VPN>();
+
+            // Paso 2: todos los VPNs asignados a esos servidores (puede haber varios por servidor)
+            return await QueryBase()
+                .Where(v => v.ServerVpns.Any(sv => serverIds.Contains(sv.ServerId)))
+                .ToListAsync();
+        }
+
         public async Task<VPN> Create(VPN vpn)
         {
             await _context.VPNs.AddAsync(vpn);

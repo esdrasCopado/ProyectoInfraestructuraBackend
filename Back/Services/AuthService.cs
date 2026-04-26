@@ -3,7 +3,6 @@ using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
 using System.Text;
 using Microsoft.IdentityModel.Tokens;
-using SolicitudServidores.Back.Models;
 using SolicitudServidores.Models;
 
 namespace SolicitudServidores.Back.Services

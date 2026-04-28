@@ -48,6 +48,47 @@ namespace SolicitudServidores.Repositories.Implementaciones
                 .FirstOrDefaultAsync(s => s.SolicitudId == solicitudId && s.EtapaNumero == etapaNumero);
         }
 
+        public async Task<int?> GetEtapaActual(long solicitudId)
+        {
+            var seguimiento = await _context.Seguimientos
+                .Include(s => s.CompletadoPor)
+                .FirstOrDefaultAsync(s => s.SolicitudId == solicitudId);
+
+            //si no se encuentra un seguimiento con el id insertado
+            //se manda -1 para significar que llego nulo
+            if (seguimiento == null) return -1; 
+
+            return seguimiento.EtapaNumero;
+        }
+
+        public async Task<Seguimiento?> UpdateEtapa(long solicitudId, int etapa)
+        {
+            var seguimiento = await _context.Seguimientos
+                .Include(s => s.CompletadoPor)
+                .FirstOrDefaultAsync(s => s.SolicitudId == solicitudId);
+
+            if (seguimiento == null) return null;
+            seguimiento.EtapaNumero = etapa;
+
+            await _context.SaveChangesAsync();
+
+            return await GetById(seguimiento.SeguimientoId);
+        }
+
+        public async Task<Seguimiento?> UpdateStatus(long solicitudId, string status)
+        {
+            var seguimiento = await _context.Seguimientos
+                .Include(s => s.CompletadoPor)
+                .FirstOrDefaultAsync(s => s.SolicitudId == solicitudId);
+
+            if (seguimiento == null) return null;
+            seguimiento.Status = status;
+
+            await _context.SaveChangesAsync();
+
+            return await GetById(seguimiento.SeguimientoId);
+        }
+
         public async Task<Seguimiento?> GetById(long id)
         {
             return await _context.Seguimientos

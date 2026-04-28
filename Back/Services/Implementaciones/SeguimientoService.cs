@@ -20,6 +20,15 @@ namespace SolicitudServidores.Services.Implementaciones
         public Task<Seguimiento?> GetEtapaAsync(long solicitudId, int etapaNumero)
             => _repo.GetByEtapa(solicitudId, etapaNumero);
 
+        public Task<int?> GetEtapaActualAsync(long solicitudId)
+            => _repo.GetEtapaActual(solicitudId);
+
+        public Task<Seguimiento?> UpdateEtapaAsync(long solicitudId, int etapa)
+            => _repo.UpdateEtapa(solicitudId, etapa);
+
+        public Task<Seguimiento?> UpdateStatusAsync(long solicitudId, string status)
+            => _repo.UpdateStatus(solicitudId, status);
+
         public async Task<List<Seguimiento>> InicializarEtapasAsync(long solicitudId)
         {
             // Evitar duplicar etapas si ya fueron inicializadas

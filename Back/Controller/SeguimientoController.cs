@@ -33,6 +33,35 @@ namespace SolicitudServidores.Controllers
             return Ok(etapa);
         }
 
+        /// <summary>Devuelve la estapa actual de una solicitud.</summary>
+        [HttpGet("solicitud/{solicitudId}/etapa")]
+        public async Task<IActionResult> GetEtapaActual(long solicitudId)
+        {
+            var etapa = await _service.GetEtapaActualAsync(solicitudId);
+            //-1 = nulo o no se encontro
+            if (etapa == -1) return NotFound();
+            return Ok(etapa);
+        }
+
+        /// <summary>Actualiza la etapa de una solicitud.</summary>
+        [HttpPut("solicitud/{solicitudId}/etapa")]
+        public async Task<IActionResult> UpdateEtapa(long solicitudId, int etapaNueva)
+        {
+            var etapa = await _service.UpdateEtapaAsync(solicitudId, etapaNueva);            
+            if (etapa == null) return NotFound();
+            return Ok(etapa);
+        }
+
+        /// <summary>Actualiza el estatus de una solicitud.</summary>
+        [HttpPut("solicitud/{solicitudId}/status")]
+        public async Task<IActionResult> UpdateStatus(long solicitudId, string status)
+        {
+            var etapa = await _service.UpdateStatusAsync(solicitudId, status);
+            if (etapa == null) return NotFound();
+            return Ok(etapa);
+        }
+
+
         /// <summary>RF02 — Crea las 14 etapas en estado 'pendiente' al registrar una solicitud.</summary>
         [HttpPost("solicitud/{solicitudId}/inicializar")]
         [Authorize(Roles = "Administrador de Centro de Datos,Administrador General")]

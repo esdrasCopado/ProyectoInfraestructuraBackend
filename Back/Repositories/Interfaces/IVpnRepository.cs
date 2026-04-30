@@ -8,6 +8,8 @@ namespace SolicitudServidores.Repositories.Interfaces
         Task<VPN?> GetById(int id);
         Task<IEnumerable<VPN>> GetByServerId(long serverId);
         Task<IEnumerable<VPN>> GetByFolio(string folio);
+        Task<IEnumerable<VPN>> GetByUsuario(long userId);
+        Task<VPN?> ActualizarFolio(int vpnId, string folio);
         Task<VPN> Create(VPN vpn);
         Task<VPN?> Update(VPN vpn);
         Task<VPN?> Delete(int id);

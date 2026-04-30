@@ -2,6 +2,7 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using SolicitudServidores.DTOs;
 using SolicitudServidores.Services.Interfaces;
+using System.Security.Claims;
 
 namespace SolicitudServidores.Controllers
 {
@@ -36,13 +37,30 @@ namespace SolicitudServidores.Controllers
         public async Task<IActionResult> GetByServidor(long serverId)
             => Ok(await _service.GetByServidorAsync(serverId));
 
-        /// <summary>Busca VPNs por folio de solicitud (soporta búsqueda parcial para autocompletado).</summary>
-        [HttpGet("folio/{folio}")]
-        public async Task<IActionResult> GetByFolio(string folio)
+        /// <summary>Lista las VPNs asociadas a servidores del usuario autenticado.</summary>
+        [HttpGet("usuario")]
+        public async Task<IActionResult> GetByUsuario()
         {
-            if (string.IsNullOrWhiteSpace(folio))
+            var claim = User.FindFirst(ClaimTypes.NameIdentifier)?.Value
+                     ?? User.FindFirst("id")?.Value;
+
+            if (!long.TryParse(claim, out var userId))
+                return Unauthorized();
+
+            return Ok(await _service.GetByUsuarioAsync(userId));
+        }
+
+        /// <summary>Guarda el folio en el registro de una VPN.</summary>
+        [HttpPatch("{id}/folio")]
+        public async Task<IActionResult> ActualizarFolio(int id, [FromBody] ActualizarFolioVpnRequest request)
+        {
+            if (string.IsNullOrWhiteSpace(request.Folio))
                 return BadRequest("El folio no puede estar vacío.");
-            return Ok(await _service.GetByFolioAsync(folio));
+
+            var vpn = await _service.ActualizarFolioAsync(id, request.Folio);
+            if (vpn == null) return NotFound();
+
+            return Ok(vpn);
         }
 
         /// <summary>RF08 — Crea una VPN. Solo admins de infraestructura o centro de datos.</summary>

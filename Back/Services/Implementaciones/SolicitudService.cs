@@ -259,8 +259,19 @@ namespace SolicitudServidores.Services.Implementaciones
                 {
                     var vpn = new VPN
                     {
-                        VpnType    = MapearTipoVpn(vpnDto.Tipo),
-                        Responsable = request.ResponsableActual?.Trim() ?? string.Empty,
+                        VpnType        = MapearTipoVpn(vpnDto.Tipo),
+                        Responsable    = vpnDto.Responsable?.Trim() ?? string.Empty,
+                        Cargo          = vpnDto.Cargo?.Trim(),
+                        Phone          = vpnDto.Telefono?.Trim(),
+                        Email          = vpnDto.Correo?.Trim(),
+                        PerfilAnterior = vpnDto.PerfilAnterior?.Trim(),
+                        VpnIp          = vpnDto.Ip?.Trim(),
+                        Empresa        = vpnDto.Empresa?.Trim(),
+                        VigenciaDias   = int.TryParse(vpnDto.Vigencia, out var v) ? v : null,
+                        Folio          = GenerarFolioVpn(),
+                        Estado         = vpnDto.Estado?.Trim(),
+                        FechaAsignacion = DateOnly.TryParse(vpnDto.FechaAsignacion, out var fa) ? fa : null,
+                        FechaExpiracion = DateOnly.TryParse(vpnDto.FechaExpiracion, out var fe) ? fe : null,
                     };
                     _context.VPNs.Add(vpn);
                     await _context.SaveChangesAsync();
@@ -281,8 +292,8 @@ namespace SolicitudServidores.Services.Implementaciones
                     var sub = new Subdominio
                     {
                         RequestedName = subDto.NombreUrl.Trim(),
-                        Port          = int.TryParse(srv0.Puerto, out var p) ? p : null,
-                        SslRequired   = srv0.RequiereSSL,
+                        Port          = int.TryParse(subDto.Puerto, out var p) ? p : null,
+                        SslRequired   = subDto.RequiereSSL || srv0.RequiereSSL,
                         Status        = "solicitado",
                     };
                     _context.Subdominios.Add(sub);
@@ -373,6 +384,9 @@ namespace SolicitudServidores.Services.Implementaciones
 
         private static string GenerarFolio()
             => $"SOL-{DateTime.UtcNow:yyyyMMdd-HHmmss-fff}";
+
+        private static string GenerarFolioVpn()
+            => $"VPN-{DateTime.UtcNow:yyyyMMdd-HHmmss}-{Guid.NewGuid().ToString("N")[..6].ToUpper()}";
 
         private static void ValidarRequest(CreateSolicitudRequest r)
         {

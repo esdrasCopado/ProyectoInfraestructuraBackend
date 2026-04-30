@@ -55,6 +55,20 @@ namespace SolicitudServidores.Models
         [StringLength(50)]
         public string? PerfilAnterior { get; set; }
 
+        [Column("folio")]
+        [StringLength(50)]
+        public string? Folio { get; set; }
+
+        [Column("estado")]
+        [StringLength(50)]
+        public string? Estado { get; set; }
+
+        [Column("fecha_asignacion")]
+        public DateOnly? FechaAsignacion { get; set; }
+
+        [Column("fecha_expiracion")]
+        public DateOnly? FechaExpiracion { get; set; }
+
         [Column("created_at")]
         public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
 

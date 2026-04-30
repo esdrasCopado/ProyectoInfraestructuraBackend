@@ -50,6 +50,33 @@ namespace SolicitudServidores.Repositories.Implementaciones
                 .ToListAsync();
         }
 
+        public async Task<IEnumerable<VPN>> GetByUsuario(long userId)
+        {
+            var serverIds = await _context.Solicitudes
+                .Where(sol => sol.ServerId != null && sol.CreatedBy == userId)
+                .Select(sol => sol.ServerId!.Value)
+                .ToListAsync();
+
+            if (serverIds.Count == 0)
+                return Enumerable.Empty<VPN>();
+
+            return await QueryBase()
+                .Where(v => v.ServerVpns.Any(sv => serverIds.Contains(sv.ServerId)))
+                .ToListAsync();
+        }
+
+        public async Task<VPN?> ActualizarFolio(int vpnId, string folio)
+        {
+            var vpn = await _context.VPNs.FirstOrDefaultAsync(v => v.VpnId == vpnId);
+            if (vpn == null) return null;
+
+            vpn.Folio     = folio.Trim();
+            vpn.UpdatedAt = DateTime.UtcNow;
+
+            await _context.SaveChangesAsync();
+            return await GetById(vpnId);
+        }
+
         public async Task<VPN> Create(VPN vpn)
         {
             await _context.VPNs.AddAsync(vpn);

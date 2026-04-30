@@ -57,15 +57,19 @@ namespace SolicitudServidores.Back.DTOs
 
     public class Reporte21ItemDto
     {
-        public string FolioVpn { get; set; } = string.Empty;
-        public string Tipo { get; set; } = string.Empty;
-        public string? Estado { get; set; }
-        public DateTime? FechaAsignacion { get; set; }
-        public DateTime? FechaExpiracion { get; set; }
-        public string? Responsable { get; set; }
-        public string Hostname { get; set; } = string.Empty;
-        public string? IpServidor { get; set; }
         public string FolioSolicitud { get; set; } = string.Empty;
+        public string Dependencia { get; set; } = string.Empty;
+        public string? Responsable { get; set; }
+        public string? ContactoResponsable { get; set; }
+        public string? Estado { get; set; }
+        public string? IpServidor { get; set; }
+        public string? IdentificadorVpn { get; set; }
+        public string? UsuarioAsignado { get; set; }
+        public DateOnly? FechaCreacion { get; set; }
+        public DateOnly? FechaVencimiento { get; set; }
+        public int? Vigencia { get; set; }
+        public string Tipo { get; set; } = string.Empty;
+        public string Hostname { get; set; } = string.Empty;
     }
 
     // ─── 2.2 Subdominios ──────────────────────────────────────────────────

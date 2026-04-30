@@ -74,6 +74,14 @@ namespace SolicitudServidores.DTOs
     public class VpnCompletaDto
     {
         public string? Tipo { get; set; }
+        public string? Responsable { get; set; }
+        public string? Cargo { get; set; }
+        public string? Telefono { get; set; }
+        public string? Correo { get; set; }
+        public string? PerfilAnterior { get; set; }
+        public string? Ip { get; set; }
+        public string? Empresa { get; set; }
+        public string? Vigencia { get; set; }
         public string? FechaAsignacion { get; set; }
         public string? FechaExpiracion { get; set; }
         public string? Estado { get; set; }
@@ -82,6 +90,8 @@ namespace SolicitudServidores.DTOs
     public class SubdominioCompletaDto
     {
         public string? NombreUrl { get; set; }
+        public string? Puerto { get; set; }
+        public bool RequiereSSL { get; set; }
         public string? FechaAsignacion { get; set; }
         public string? FechaExpiracion { get; set; }
         public string? Estado { get; set; }

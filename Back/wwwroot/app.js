@@ -554,19 +554,90 @@ async function loadRequests() {
           <details style="margin-top:1rem;">
             <summary style="cursor:pointer;font-weight:600;color:var(--primary);">Ver servidores (${servidores.length})</summary>
             <div style="margin-top:1rem;display:grid;gap:0.75rem;">
-              ${servidores.map(server => `
+              ${servidores.map(server => {
+                const vpns = server.serverVpns?.map(sv => sv.vpn).filter(Boolean) || [];
+                const subdominios = server.serverSubdominios?.map(ss => ss.subdominio).filter(Boolean) || [];
+                const vpnRows = vpns.length
+                  ? vpns.map(v => `
+                      <tr>
+                        <td>${v.folio || '—'}</td>
+                        <td>${v.empresa || '—'}</td>
+                        <td>${v.responsable || '—'}</td>
+                        <td>${v.email || '—'}</td>
+                        <td>${v.estado || '—'}</td>
+                        <td>${server.ip || '—'}</td>
+                        <td>${v.externalId || '—'}</td>
+                        <td>${v.fechaAsignacion || '—'}</td>
+                        <td>${v.fechaExpiracion || '—'}</td>
+                        <td>${v.vigenciaDias != null ? v.vigenciaDias + ' días' : '—'}</td>
+                        <td>${v.vpnType || '—'}</td>
+                      </tr>`).join('')
+                  : '<tr><td colspan="11" style="color:#888;font-style:italic;">Sin VPNs registradas</td></tr>';
+                const subRows = subdominios.length
+                  ? subdominios.map(s => `
+                      <tr>
+                        <td>${s.approvedName || s.requestedName || '—'}</td>
+                        <td>${s.status || '—'}</td>
+                        <td>${s.assignedAt ? new Date(s.assignedAt).toLocaleDateString('es-MX') : '—'}</td>
+                        <td>${s.expiresAt ? new Date(s.expiresAt).toLocaleDateString('es-MX') : '—'}</td>
+                        <td>${s.sslRequired ? 'Sí' : 'No'}</td>
+                      </tr>`).join('')
+                  : '<tr><td colspan="5" style="color:#888;font-style:italic;">Sin subdominios registrados</td></tr>';
+                return `
                 <div style="background:#f9f9f9;padding:0.9rem;border-radius:8px;">
                   <strong>${server.hostname || 'Sin hostname'}</strong> • ${server.tipoUso || 'Interno'} • ${server.sistemaOperativo || 'N/D'}<br/>
                   Función: ${server.funcion || 'N/D'} • Etapa: ${server.etapaOperativa || 'Provisionamiento'}<br/>
                   Responsable: ${server.responsableInfraestructura || 'Sin asignar'}<br/>
-                  IP: ${server.ip || 'Pendiente'} • Recursos: ${server.nucleos || 0} CPU / ${server.ram || 0} GB / ${server.almacenamiento || 0} GB<br/>
-                  VPNs: ${server.vpNs?.length || server.vpns?.length || 0} • Subdominios: ${server.subdominios?.length || 0} • Evidencias: ${server.evidenciasPruebas?.length || 0}
+                  IP: ${server.ip || 'Pendiente'} • Recursos: ${server.nucleos || 0} CPU / ${server.ram || 0} GB / ${server.almacenamiento || 0} GB
                   ${renderTimelineChecklist(server)}
+
+                  <details style="margin-top:0.75rem;">
+                    <summary style="cursor:pointer;font-weight:600;color:var(--primary);">VPNs (${vpns.length})</summary>
+                    <div style="overflow-x:auto;margin-top:0.5rem;">
+                      <table style="width:100%;border-collapse:collapse;font-size:0.82em;">
+                        <thead>
+                          <tr style="background:#e8ecf0;text-align:left;">
+                            <th style="padding:4px 8px;">Identificador</th>
+                            <th style="padding:4px 8px;">Dependencia/Proveedor</th>
+                            <th style="padding:4px 8px;">Responsable</th>
+                            <th style="padding:4px 8px;">Contacto</th>
+                            <th style="padding:4px 8px;">Estatus</th>
+                            <th style="padding:4px 8px;">IP Servidor</th>
+                            <th style="padding:4px 8px;">Usuario asignado</th>
+                            <th style="padding:4px 8px;">Fecha creación</th>
+                            <th style="padding:4px 8px;">Fecha vencimiento</th>
+                            <th style="padding:4px 8px;">Vigencia</th>
+                            <th style="padding:4px 8px;">Tipo VPN</th>
+                          </tr>
+                        </thead>
+                        <tbody>${vpnRows}</tbody>
+                      </table>
+                    </div>
+                  </details>
+
+                  <details style="margin-top:0.5rem;">
+                    <summary style="cursor:pointer;font-weight:600;color:var(--primary);">Subdominios (${subdominios.length})</summary>
+                    <div style="overflow-x:auto;margin-top:0.5rem;">
+                      <table style="width:100%;border-collapse:collapse;font-size:0.82em;">
+                        <thead>
+                          <tr style="background:#e8ecf0;text-align:left;">
+                            <th style="padding:4px 8px;">URL / Nombre</th>
+                            <th style="padding:4px 8px;">Estado</th>
+                            <th style="padding:4px 8px;">Fecha asignación</th>
+                            <th style="padding:4px 8px;">Fecha expiración</th>
+                            <th style="padding:4px 8px;">SSL</th>
+                          </tr>
+                        </thead>
+                        <tbody>${subRows}</tbody>
+                      </table>
+                    </div>
+                  </details>
+
                   <div class="toolbar-row" style="margin-top:0.75rem;">
                     <button class="btn-secondary edit-server-btn" data-id="${server.id}"><i class="bi bi-sliders"></i> Actualizar flujo</button>
                   </div>
-                </div>
-              `).join('')}
+                </div>`;
+              }).join('')}
             </div>
           </details>
         </div>

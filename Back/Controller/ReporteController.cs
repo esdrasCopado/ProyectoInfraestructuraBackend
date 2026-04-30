@@ -163,7 +163,7 @@ namespace SolicitudServidores.Controllers
                 .AsQueryable();
 
             if (!string.IsNullOrWhiteSpace(estado))
-                query = query.Where(v => v.VpnType == estado);
+                query = query.Where(v => v.Estado == estado);
 
             var vpns = await query.ToListAsync();
 
@@ -172,15 +172,19 @@ namespace SolicitudServidores.Controllers
                 var servidor = v.ServerVpns.Select(sv => sv.Servidor).FirstOrDefault();
                 return new Reporte21ItemDto
                 {
-                    FolioVpn        = v.VpnId.ToString(),
-                    Tipo            = v.VpnType,
-                    Estado          = null,
-                    FechaAsignacion = v.CreatedAt,
-                    FechaExpiracion = null,
-                    Responsable     = v.Responsable,
-                    Hostname        = servidor?.Hostname ?? string.Empty,
-                    IpServidor      = servidor?.Ip,
-                    FolioSolicitud  = servidor?.Solicitud?.Folio ?? string.Empty,
+                    FolioSolicitud      = servidor?.Solicitud?.Folio ?? string.Empty,
+                    Dependencia         = v.Empresa ?? string.Empty,
+                    Responsable         = v.Responsable,
+                    ContactoResponsable = v.Email,
+                    Estado              = v.Estado,
+                    IpServidor          = servidor?.Ip,
+                    IdentificadorVpn    = v.Folio,
+                    UsuarioAsignado     = v.ExternalId,
+                    FechaCreacion       = v.FechaAsignacion,
+                    FechaVencimiento    = v.FechaExpiracion,
+                    Vigencia            = v.VigenciaDias,
+                    Tipo                = v.VpnType,
+                    Hostname            = servidor?.Hostname ?? string.Empty,
                 };
             }).ToList();
 

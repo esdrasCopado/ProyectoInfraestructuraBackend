@@ -2,6 +2,7 @@
 using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 using SolicitudServidores.DBContext;
@@ -11,9 +12,11 @@ using SolicitudServidores.DBContext;
 namespace SolicitudServidores.Migrations
 {
     [DbContext(typeof(DataContext))]
-    partial class DataContextModelSnapshot : ModelSnapshot
+    [Migration("20260430102813_AddFolioToVpn")]
+    partial class AddFolioToVpn
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -1207,23 +1210,10 @@ namespace SolicitudServidores.Migrations
                         .HasColumnType("character varying(150)")
                         .HasColumnName("empresa");
 
-                    b.Property<string>("Estado")
-                        .HasMaxLength(50)
-                        .HasColumnType("character varying(50)")
-                        .HasColumnName("estado");
-
                     b.Property<string>("ExternalId")
                         .HasMaxLength(50)
                         .HasColumnType("character varying(50)")
                         .HasColumnName("external_id");
-
-                    b.Property<DateOnly?>("FechaAsignacion")
-                        .HasColumnType("date")
-                        .HasColumnName("fecha_asignacion");
-
-                    b.Property<DateOnly?>("FechaExpiracion")
-                        .HasColumnType("date")
-                        .HasColumnName("fecha_expiracion");
 
                     b.Property<string>("Folio")
                         .HasMaxLength(50)

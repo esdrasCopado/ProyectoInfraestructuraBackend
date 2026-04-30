@@ -140,6 +140,11 @@ namespace SolicitudServidores.Repositories.Implementaciones
                 .Include(s => s.AdminContact)
                 .Include(s => s.CreadoPor)
                 .Include(s => s.Servidor)
+                    .ThenInclude(srv => srv!.ServerVpns)
+                        .ThenInclude(sv => sv.Vpn)
+                .Include(s => s.Servidor)
+                    .ThenInclude(srv => srv!.ServerSubdominios)
+                        .ThenInclude(ss => ss.Subdominio)
                 .Include(s => s.Carta)
                 .Include(s => s.Seguimientos.OrderBy(seg => seg.EtapaNumero));
         }

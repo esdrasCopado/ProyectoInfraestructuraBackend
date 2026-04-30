@@ -21,6 +21,11 @@ namespace SolicitudServidores.DTOs
         public long? ServerId { get; set; }
     }
 
+    public class ActualizarFolioVpnRequest
+    {
+        public string Folio { get; set; } = string.Empty;
+    }
+
     public class UpdateVpnRequest
     {
         public string? VpnType { get; set; }

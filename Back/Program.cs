@@ -63,6 +63,7 @@ builder.Services.AddControllers(options =>
 {
     options.JsonSerializerOptions.ReferenceHandler = ReferenceHandler.IgnoreCycles;
     options.JsonSerializerOptions.DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull;
+    options.JsonSerializerOptions.PropertyNameCaseInsensitive = true;
 });
 
 // ── Swagger ───────────────────────────────────────────────────────────────────
